@@ -182,6 +182,16 @@ mysql -u root -p light_out < "light-out/数据库light_out .sql"
 
 ### 2. 启动后端（端口 8080）
 
+> ⚠️ **必须先设置环境变量 `JWT_SECRET`**（至少 32 字节）。后端启动时读取它作为 JWT 签名密钥，
+> 未设置会直接启动失败——这是刻意的 fail-fast，避免再次出现硬编码弱密钥。
+
+```bash
+# Windows PowerShell
+$env:JWT_SECRET = [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }))
+# Linux / macOS
+export JWT_SECRET="$(openssl rand -base64 48)"
+```
+
 ```bash
 # 在仓库根目录执行；-pl lp-starter -am 会连带构建其依赖模块
 mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run
@@ -243,10 +253,13 @@ npm run lint      # ESLint 检查
 
 ### 后端
 
-当前 `light-out/lp-starter/src/main/resources/application.yaml` 里写死了本地开发用的数据库账号密码，仓库中不应长期保留真实凭据。推荐的做法是**保持配置文件里不含密码，改用环境变量或本地 profile 覆盖**：
+**必填：`JWT_SECRET`**（JWT 签名密钥，至少 32 字节）。缺失或过短时后端无法启动，请按[启动后端](#2-启动后端端口-8080)中的命令生成。
+
+当前 `light-out/lp-starter/src/main/resources/application.yaml` 里还留着本地开发用的数据库账号密码，仓库中不应长期保留真实凭据。推荐的做法是**保持配置文件里不含密码，改用环境变量或本地 profile 覆盖**：
 
 ```bash
 # 方式一：环境变量（Spring Boot 宽松绑定，优先级高于 application.yaml）
+set JWT_SECRET=请替换为至少32字节的随机串
 set SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/light_out?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
 set SPRING_DATASOURCE_USERNAME=your_user
 set SPRING_DATASOURCE_PASSWORD=your_password
@@ -264,19 +277,22 @@ spring:
 ```
 
 ```bash
-# 用本地 profile 启动
+# 用本地 profile 启动（JWT_SECRET 仍通过环境变量提供）
 mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 其他常用配置项（均在 `application.yaml` 中）：
 
-| 配置 | 当前值 |
-|------|--------|
-| `server.port` | `8080` |
-| `spring.datasource.url` | `jdbc:mysql://localhost:3306/light_out` |
-| `spring.data.redis` | `localhost:6379`，db 0 |
-| `mybatis.mapper-locations` | `classpath:mapper/*.xml` |
-| `logging.level.com.learning` | `DEBUG` |
+| 配置 | 当前值 | 说明 |
+|------|--------|------|
+| `server.port` | `8080` | 服务端口 |
+| `jwt.secret` | `${JWT_SECRET:}` | **必填**，环境变量注入 |
+| `jwt.expire-hours` | `12` | 令牌有效期（小时） |
+| `security.password.legacy-md5` | `migrate` | 存量 MD5 账号：`migrate` 登录后自动升级为 BCrypt，`reject` 要求重置 |
+| `spring.datasource.url` | `jdbc:mysql://localhost:3306/light_out` | 库名 `light_out` |
+| `spring.data.redis` | `localhost:6379`，db 0 | |
+| `mybatis.mapper-locations` | `classpath:mapper/*.xml` | |
+| `logging.level.com.learning` | `DEBUG` | |
 
 ---
 
@@ -322,13 +338,20 @@ mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.pr
 
 > ⚠️ **在把本仓库推送到公开远程之前，请先处理以下问题。**
 
-1. **仓库中存在明文凭据**，需要轮换并移出仓库：
+1. **仓库中仍有明文凭据**，需要轮换并移出仓库：
    - `light-out/项目结构.md`：服务器 IP、MySQL/Redis/RabbitMQ 账号与密码；
-   - `light-out/lp-starter/src/main/resources/application.yaml`：MySQL 账号与密码；
-   - `light-out/lp-common/src/main/java/com/learning/lpcommon/utils/JwtUtil.java`：硬编码的 JWT 签名密钥。
+   - `light-out/lp-starter/src/main/resources/application.yaml`：MySQL 账号与密码。
 2. **正确做法**：凭据改为环境变量或本地 profile 注入（见[环境变量与配置](#环境变量与配置)），仓库内只保留 `.env.example` / `application-local.yaml` 这类模板。
 3. **提交前自检**：`git status` 不应出现 `.env`、`application-local.yaml`、`target/`、`node_modules/`、`dist/` 等路径；`.gitignore` 已覆盖这些条目。
 4. 一旦敏感信息进入过 Git 历史，**仅删除文件是不够的**，必须轮换凭据；如有需要，可用 `git filter-repo` 清理历史后再推送。
+
+### 已完成的加固
+
+- **JWT 密钥已外置**：`JwtUtil` 不再包含任何默认密钥，只从 `jwt.secret`（环境变量 `JWT_SECRET`）读取；短于 32 字节直接启动失败。令牌强制校验 `iss`，签名错误/过期/篡改一律拒绝。
+- **口令哈希已升级为 BCrypt**：新口令一律 BCrypt（随机盐，cost 10）；存量无盐 MD5 账号在下次登录校验通过后立即被覆写为 BCrypt，旧哈希不保留。需要"强制重置"语义时把 `security.password.legacy-md5` 设为 `reject`。
+- **考核模块已补授权与脱敏**：新增统一的 `AssessmentAccessGuard`（角色 + 课程归属校验）；试卷详情、答卷详情不再向学生下发参考答案与解析；班级提交列表与成绩列表对学生收敛为"只看自己的记录"。
+- **口令管理已闭环**：新增 `PUT /user/password`（自助改密，需校验旧密码）与 `POST /user/password/reset`（管理员重置），这样 `legacy-md5=reject` 才有可用的重置路径。
+- **注意**：切换密钥会让所有已签发令牌失效；存量账号首次登录后其密码哈希即被迁移，因此**请不要在迁移期间回滚到旧版本**（旧代码读不懂 BCrypt 哈希）。
 
 ---
 
