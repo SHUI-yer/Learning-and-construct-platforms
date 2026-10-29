@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learning.learning.mapper.LearningReportMapper">
+    <resultMap id="BaseResultMap" type="com.learning.learning.entity.LearningReport">
+        <id column="report_id" property="reportId" jdbcType="BIGINT"/>
+        <result column="user_id" property="userId" jdbcType="BIGINT"/>
+        <result column="course_id" property="courseId" jdbcType="BIGINT"/>
+        <result column="report_type" property="reportType" jdbcType="VARCHAR"/>
+        <result column="period" property="period" jdbcType="VARCHAR"/>
+        <result column="data" property="data" jdbcType="VARCHAR"/>
+        <result column="generated_at" property="generatedAt" jdbcType="TIMESTAMP"/>
+        <!-- 删掉下面两行！实体没有createdAt、updatedAt，不能映射 -->
+        <!--<result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>-->
+        <!--<result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>-->
+    </resultMap>
+
+    <select id="selectByUserCourseTypePeriod" resultMap="BaseResultMap" parameterType="map">
+        SELECT report_id,user_id,course_id,report_type,period,data,generated_at
+        FROM learning_report
+        WHERE user_id = #{userId}
+          AND course_id = #{courseId}
+          AND report_type = #{reportType}
+          AND period = #{period}
+        ORDER BY generated_at DESC LIMIT 1
+    </select>
+
+</mapper>

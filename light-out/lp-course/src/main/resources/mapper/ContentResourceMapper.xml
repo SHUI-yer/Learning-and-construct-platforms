@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learning.lpcourse.mapper.ContentResourceMapper">
+
+    <resultMap id="ResourceResultMap" type="com.learning.lpcourse.entity.ContentResource">
+        <id column="resource_id" property="resourceId"/>
+        <result column="chapter_id" property="chapterId"/>
+        <result column="resource_type" property="resourceType"/>
+        <result column="title" property="title"/>
+        <result column="url" property="url"/>
+        <result column="duration" property="duration"/>
+        <result column="content_text" property="contentText"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="resourceId">
+        INSERT INTO content_resource(chapter_id,resource_type,title,url,duration,content_text,sort_order)
+        VALUES(#{chapterId},#{resourceType},#{title},#{url},#{duration},#{contentText},#{sortOrder})
+    </insert>
+
+    <update id="update">
+        UPDATE content_resource
+        SET resource_type=#{resourceType},title=#{title},url=#{url},duration=#{duration},
+            content_text=#{contentText},sort_order=#{sortOrder}
+        WHERE resource_id=#{resourceId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM content_resource WHERE resource_id=#{resourceId}
+    </delete>
+
+    <select id="selectByChapterId" resultMap="ResourceResultMap">
+        SELECT * FROM content_resource WHERE chapter_id=#{chapterId} ORDER BY sort_order
+    </select>
+
+    <select id="selectByChapterIdList" resultMap="ResourceResultMap">
+        SELECT * FROM content_resource
+        WHERE chapter_id IN
+        <foreach collection="list" open="(" separator="," close=")" item="cid">
+            #{cid}
+        </foreach>
+        ORDER BY sort_order
+    </select>
+
+    <select id="selectById" resultType="com.learning.lpcourse.entity.ContentResource">
+        select * from content_resource where resource_id = #{resourceId}
+    </select>
+
+</mapper>

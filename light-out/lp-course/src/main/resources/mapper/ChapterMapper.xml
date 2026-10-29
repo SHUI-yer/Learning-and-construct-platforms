@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learning.lpcourse.mapper.ChapterMapper">
+
+    <resultMap id="ChapterResultMap" type="com.learning.lpcourse.entity.Chapter">
+        <id column="chapter_id" property="chapterId"/>
+        <result column="course_id" property="courseId"/>
+        <result column="title" property="title"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="chapterId">
+        INSERT INTO chapter(course_id,title,sort_order,parent_id)
+        VALUES(#{courseId},#{title},#{sortOrder},#{parentId})
+    </insert>
+
+    <update id="update">
+        UPDATE chapter
+        SET title=#{title},sort_order=#{sortOrder},parent_id=#{parentId}
+        WHERE chapter_id=#{chapterId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM chapter WHERE chapter_id=#{chapterId}
+    </delete>
+
+    <select id="selectById" resultMap="ChapterResultMap">
+        SELECT * FROM chapter WHERE chapter_id=#{chapterId}
+    </select>
+
+    <select id="selectFlatByCourseId" resultMap="ChapterResultMap">
+        SELECT * FROM chapter WHERE course_id=#{courseId} ORDER BY sort_order
+    </select>
+
+    <select id="selectChapterByCourseId" resultType="com.learning.lpcourse.entity.Chapter">
+        SELECT * FROM chapter WHERE course_id = #{courseId}
+    </select>
+
+    <update id="updateParentId">
+        UPDATE chapter SET parent_id = #{parentId} WHERE chapter_id = #{chapterId}
+    </update>
+
+    <!-- 更新排序字段 -->
+    <update id="updateSortOrder">
+        UPDATE chapter
+        SET sort_order = #{sortOrder}
+        WHERE chapter_id = #{chapterId}
+    </update>
+
+    <!-- 查询同级的所有章节 -->
+    <!-- 查询同级的所有章节 -->
+    <select id="selectSiblingChapterList" resultType="com.learning.lpcourse.entity.Chapter">
+        SELECT chapter_id, course_id, title, sort_order, parent_id, created_at, updated_at
+        FROM chapter
+        WHERE course_id = #{courseId}
+        <choose>
+            <when test="parentId != null">
+                AND parent_id = #{parentId}
+            </when>
+            <otherwise>
+                AND parent_id IS NULL
+            </otherwise>
+        </choose>
+        ORDER BY sort_order ASC
+    </select>
+</mapper>

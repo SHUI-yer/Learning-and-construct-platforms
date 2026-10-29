@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 父工程继承SpringBoot版本 -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.14</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.learning</groupId>
+    <artifactId>learning-platform</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <!-- 关键：父工程打包类型为pom -->
+    <packaging>pom</packaging>
+
+    <name>learning-platform</name>
+    <description>在线学习平台 聚合父工程</description>
+    <url/>
+    <licenses>
+        <license/>
+    </licenses>
+    <developers>
+        <developer/>
+    </developers>
+    <scm>
+        <connection/>
+        <developerConnection/>
+        <tag/>
+        <url/>
+    </scm>
+
+    <!-- 声明所有子模块，顺序无关 -->
+    <modules>
+        <module>lp-common</module>
+        <module>lp-auth</module>
+        <module>lp-course</module>
+        <module>lp-assessment</module>
+        <!-- lp-learning pom 的 knife4j 依赖缺版本导致 reactor 校验失败，且不在 lp-starter 启动链路，暂注释待其修复
+        <module>lp-learning</module>
+        -->
+        <!-- 以下模块目录暂不存在，先注释，待对应团队就绪后恢复
+        <module>lp-peer-review</module>
+        <module>lp-community</module>
+        <module>lp-ai-engine</module>
+        <module>lp-self-study</module>
+        <module>lp-cet</module>
+        <module>lp-message</module>
+        <module>lp-admin</module>
+        -->
+        <module>lp-starter</module>
+    </modules>
+
+    <!-- 全局统一版本变量 -->
+    <properties>
+        <java.version>17</java.version>
+        <spring-ai.version>1.1.7</spring-ai.version>
+        <mybatis.version>3.0.5</mybatis.version>
+    </properties>
+
+    <!-- 统一版本管理，子模块直接引用无需写version -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- 内部子模块统一版本锁定 -->
+            <dependency>
+                <groupId>com.learning</groupId>
+                <artifactId>lp-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.learning</groupId>
+                <artifactId>lp-auth</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.learning</groupId>
+                <artifactId>lp-course</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.learning</groupId>
+                <artifactId>lp-assessment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.learning</groupId>
+                <artifactId>lp-starter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- SpringAI 版本统一 -->
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Mybatis 版本统一 -->
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter</artifactId>
+                <version>${mybatis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter-test</artifactId>
+                <version>${mybatis.version}</version>
+            </dependency>
+            <!--jwt令牌*3-->
+            <dependency>
+                <groupId>com.auth0</groupId>
+                <artifactId>java-jwt</artifactId>
+                <version>4.4.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- ========== 父工程删除全部dependencies、build插件 ========== -->
+    <!-- 所有web/redis/mysql/lombok/test依赖全部迁移至 lp-starter、lp-auth、lp-common 子模块 -->
+    <!-- spring-boot-maven-plugin、maven-compiler-plugin 全部移到 lp-starter -->
+
+</project>

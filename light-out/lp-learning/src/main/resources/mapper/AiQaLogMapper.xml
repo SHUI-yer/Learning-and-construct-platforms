@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learning.learning.mapper.AiQaLogMapper">
+    <resultMap id="BaseResultMap" type="com.learning.learning.entity.AiQaLog">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="user_id" property="userId" jdbcType="BIGINT"/>
+        <result column="resource_id" property="resourceId" jdbcType="BIGINT"/>
+        <result column="question" property="question" jdbcType="LONGVARCHAR"/>
+        <result column="answer" property="answer" jdbcType="LONGVARCHAR"/>
+        <result column="source_refs" property="sourceRefs" jdbcType="VARCHAR"/>
+        <result column="asked_at" property="askedAt" jdbcType="TIMESTAMP"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectRecentByUserResource" resultMap="BaseResultMap" parameterType="map">
+        SELECT * FROM ai_qa_log WHERE user_id = #{userId} AND resource_id = #{resourceId} ORDER BY asked_at DESC LIMIT #{limit}
+    </select>
+
+</mapper>

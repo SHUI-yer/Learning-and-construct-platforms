@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 720" width="100" height="720">
+  <defs>
+    <!-- 黑杆高光渐变（左暗-中亮-右暗，模拟圆柱反光） -->
+    <linearGradient id="blackBody" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"  stop-color="#0b0b0b"/>
+      <stop offset="30%" stop-color="#1f1f1f"/>
+      <stop offset="48%" stop-color="#3d3d3d"/>
+      <stop offset="55%" stop-color="#555555"/>
+      <stop offset="65%" stop-color="#2a2a2a"/>
+      <stop offset="100%" stop-color="#0b0b0b"/>
+    </linearGradient>
+    <!-- 亮面黑（笔帽，更亮一些） -->
+    <linearGradient id="blackCap" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"  stop-color="#0d0d0d"/>
+      <stop offset="32%" stop-color="#262626"/>
+      <stop offset="50%" stop-color="#484848"/>
+      <stop offset="62%" stop-color="#303030"/>
+      <stop offset="100%" stop-color="#0d0d0d"/>
+    </linearGradient>
+    <!-- 金色金属渐变 -->
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"  stop-color="#9a6f0a"/>
+      <stop offset="28%" stop-color="#c9961f"/>
+      <stop offset="50%" stop-color="#f2c14e"/>
+      <stop offset="62%" stop-color="#ffd873"/>
+      <stop offset="78%" stop-color="#c9961f"/>
+      <stop offset="100%" stop-color="#8a6207"/>
+    </linearGradient>
+    <!-- 笔尖用的略浅金 -->
+    <linearGradient id="nibGold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"  stop-color="#b8860b"/>
+      <stop offset="45%" stop-color="#f5cd5e"/>
+      <stop offset="55%" stop-color="#ffe28a"/>
+      <stop offset="100%" stop-color="#a8780a"/>
+    </linearGradient>
+    <!-- 柔和投影 -->
+    <filter id="softShadow" x="-40%" y="-10%" width="180%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="2" dy="4" result="off"/>
+      <feColorMatrix in="off" type="matrix"
+        values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.45 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#softShadow)">
+
+    <!-- ============ 笔帽 ============ -->
+    <!-- 笔帽主体（顶部微圆） -->
+    <path d="M 36 18
+             Q 36 8 50 8
+             Q 64 8 64 18
+             L 64 138
+             L 36 138 Z"
+          fill="url(#blackCap)"/>
+    <!-- 笔帽顶珠（金色小圆顶） -->
+    <ellipse cx="50" cy="9" rx="7" ry="4.5" fill="url(#gold)"/>
+
+    <!-- 笔夹（金色，从笔帽右上沿下来，末端带弯钩） -->
+    <path d="M 61 14
+             Q 66 14 66 20
+             L 66 172
+             Q 66 180 60 180
+             L 57 180
+             Q 53 180 53 174
+             L 53 30
+             Q 53 22 49 20
+             L 48 19
+             Q 50 14 55 14 Z"
+          fill="url(#gold)"/>
+    <!-- 笔夹铆钉 -->
+    <circle cx="59" cy="26" r="2.2" fill="#7a5606"/>
+
+    <!-- 笔帽中环（金色，稍宽） -->
+    <rect x="34" y="136" width="32" height="7" fill="url(#gold)"/>
+
+    <!-- ============ 笔杆 ============ -->
+    <rect x="36" y="143" width="28" height="420" rx="1" fill="url(#blackBody)"/>
+
+    <!-- 笔杆细装饰金环（两道） -->
+    <rect x="35.5" y="330" width="29" height="2.5" fill="url(#gold)"/>
+    <rect x="35.5" y="335" width="29" height="1.5" fill="#8a6207"/>
+
+    <!-- ============ 握笔区（收腰锥形） ============ -->
+    <path d="M 36 563
+             L 43 612
+             L 57 612
+             L 64 563 Z"
+          fill="url(#blackBody)"/>
+    <!-- 握笔区与笔尖之间的小金环 -->
+    <rect x="42" y="610" width="16" height="3.5" fill="url(#gold)"/>
+
+    <!-- ============ 笔尖座（黑色小圆锥） ============ -->
+    <path d="M 43 613.5
+             L 47 632
+             L 53 632
+             L 57 613.5 Z"
+          fill="#161616"/>
+
+    <!-- ============ 钢笔尖（经典造型） ============ -->
+    <!-- 笔尖主体：带肩部，向下收成尖 -->
+    <path d="M 47 632
+             C 45 650, 44 668, 47 686
+             C 49 698, 54 706, 55 712
+             C 56 706, 61 698, 63 686
+             C 66 668, 65 650, 63 632
+             Z"
+          fill="url(#nibGold)"/>
+    <!-- 笔尖中缝（沿中线，从透气孔到笔尖） -->
+    <path d="M 55 640 L 55 708" stroke="#1a1a1a" stroke-width="1.1" fill="none"/>
+    <!-- 透气孔 -->
+    <circle cx="55" cy="648" r="2.6" fill="#1a1a1a"/>
+    <!-- 笔尖肩部装饰线（两侧弧线，模仿笔尖刻线） -->
+    <path d="M 48 640 Q 52 655 50 675" stroke="#7a5606" stroke-width="0.7" fill="none" opacity="0.7"/>
+    <path d="M 62 640 Q 58 655 60 675" stroke="#7a5606" stroke-width="0.7" fill="none" opacity="0.7"/>
+
+  </g>
+</svg>

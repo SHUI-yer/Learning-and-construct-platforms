@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learning.lpcourse.mapper.StudentClassMapper">
+
+    <select id="selectStudentIdByClassIds" resultType="java.lang.Long">
+        SELECT DISTINCT student_id
+        FROM student_class
+        WHERE class_id IN
+        <foreach collection="classIdList" open="(" separator="," close=")" item="cid">
+            #{cid}
+        </foreach>
+    </select>
+
+</mapper>

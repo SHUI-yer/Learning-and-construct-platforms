@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learning.learning.mapper.StudyStatsMapper">
+    <resultMap id="BaseResultMap" type="com.learning.learning.entity.StudyStats">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="user_id" property="userId" jdbcType="BIGINT"/>
+        <result column="course_id" property="courseId" jdbcType="BIGINT"/>
+        <result column="stat_date" property="statDate" jdbcType="DATE"/>
+        <result column="video_duration" property="videoDuration" jdbcType="INTEGER"/>
+        <result column="doc_duration" property="docDuration" jdbcType="INTEGER"/>
+        <result column="total_duration" property="totalDuration" jdbcType="INTEGER"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectByUserCourseDate" resultMap="BaseResultMap" parameterType="map">
+        SELECT * FROM study_stats WHERE user_id = #{userId} AND course_id = #{courseId} AND stat_date = #{statDate} LIMIT 1
+    </select>
+
+    <insert id="upsert" parameterType="com.learning.learning.entity.StudyStats" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO study_stats (user_id, course_id, stat_date, video_duration, doc_duration, total_duration, created_at, updated_at)
+        VALUES (#{userId}, #{courseId}, #{statDate}, #{videoDuration}, #{docDuration}, #{totalDuration}, #{createdAt}, #{updatedAt})
+        ON DUPLICATE KEY UPDATE video_duration = VALUES(video_duration), doc_duration = VALUES(doc_duration), total_duration = VALUES(total_duration), updated_at = VALUES(updated_at)
+    </insert>
+
+    <update id="incrementDuration" parameterType="map">
+        INSERT INTO study_stats (user_id, course_id, stat_date, video_duration, doc_duration, total_duration, created_at, updated_at)
+        VALUES (#{userId}, #{courseId}, #{statDate}, #{videoDelta}, #{docDelta}, #{totalDelta}, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE video_duration = video_duration + #{videoDelta}, doc_duration = doc_duration + #{docDelta}, total_duration = total_duration + #{totalDelta}, updated_at = NOW()
+    </update>
+
+    <!-- Dashboard helpers -->
+    <select id="countDistinctUsersByDate" resultType="long" parameterType="string">
+        SELECT COUNT(DISTINCT user_id) FROM study_stats WHERE stat_date = #{date}
+    </select>
+
+    <select id="countDistinctUsersSince" resultType="long" parameterType="string">
+        SELECT COUNT(DISTINCT user_id) FROM study_stats WHERE stat_date >= #{startDate}
+    </select>
+
+    <select id="avgCompletionForCourse" resultType="decimal" parameterType="long">
+        SELECT AVG(total_duration) FROM study_stats WHERE course_id = #{courseId}
+    </select>
+
+    <select id="courseVisitRanking" resultType="map" parameterType="map">
+        SELECT course_id AS courseId, COUNT(DISTINCT user_id) AS visitCount
+        FROM study_stats
+        WHERE stat_date >= #{startDate}
+        GROUP BY course_id
+        ORDER BY visitCount DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="assignmentSubmissionRate" resultType="decimal" parameterType="long">
+        SELECT COALESCE(
+                       (SELECT COUNT(DISTINCT s.submission_id)
+                        FROM submission s
+                                 INNER JOIN task t ON s.task_id = t.task_id
+                        WHERE t.course_id = #{courseId}) * 100.0
+                           / NULLIF((SELECT COUNT(*) FROM task WHERE course_id = #{courseId}), 0),
+                       0
+               )
+    </select>
+
+</mapper>

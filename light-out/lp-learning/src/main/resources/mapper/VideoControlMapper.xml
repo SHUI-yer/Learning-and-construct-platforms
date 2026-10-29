@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learning.learning.mapper.VideoControlMapper">
+    <resultMap id="BaseResultMap" type="com.learning.learning.entity.VideoControl">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="resource_id" property="resourceId" jdbcType="BIGINT"/>
+        <result column="no_drag" property="noDrag" jdbcType="BOOLEAN"/>
+        <result column="no_fast_forward" property="noFastForward" jdbcType="BOOLEAN"/>
+        <result column="min_play_speed" property="minPlaySpeed" jdbcType="DECIMAL"/>
+        <result column="max_play_speed" property="maxPlaySpeed" jdbcType="DECIMAL"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectByResourceId" resultMap="BaseResultMap" parameterType="long">
+        SELECT * FROM video_control WHERE resource_id = #{resourceId} LIMIT 1
+    </select>
+
+    <insert id="upsert" parameterType="com.learning.learning.entity.VideoControl" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO video_control (resource_id, no_drag, no_fast_forward, min_play_speed, max_play_speed, created_at, updated_at)
+        VALUES (#{resourceId}, #{noDrag}, #{noFastForward}, #{minPlaySpeed}, #{maxPlaySpeed}, #{createdAt}, #{updatedAt})
+        ON DUPLICATE KEY UPDATE no_drag = VALUES(no_drag), no_fast_forward = VALUES(no_fast_forward), min_play_speed = VALUES(min_play_speed), max_play_speed = VALUES(max_play_speed), updated_at = VALUES(updated_at)
+    </insert>
+
+</mapper>

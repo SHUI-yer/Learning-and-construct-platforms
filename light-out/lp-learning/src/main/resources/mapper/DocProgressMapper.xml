@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learning.learning.mapper.DocProgressMapper">
+    <resultMap id="BaseResultMap" type="com.learning.learning.entity.DocProgress">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="user_id" property="userId" jdbcType="BIGINT"/>
+        <result column="resource_id" property="resourceId" jdbcType="BIGINT"/>
+        <result column="last_position" property="lastPosition" jdbcType="INTEGER"/>
+        <result column="read_percent" property="readPercent" jdbcType="DECIMAL"/>
+        <result column="last_read_at" property="lastReadAt" jdbcType="TIMESTAMP"/>
+        <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
+        <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <select id="selectByUserAndResource" resultMap="BaseResultMap" parameterType="map">
+        SELECT * FROM doc_progress WHERE user_id = #{userId} AND resource_id = #{resourceId} LIMIT 1
+    </select>
+
+    <insert id="upsert" parameterType="com.learning.learning.entity.DocProgress" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO doc_progress (user_id, resource_id, last_position, read_percent, last_read_at, created_at, updated_at)
+        VALUES (#{userId},#{resourceId},#{lastPosition},#{readPercent},#{lastReadAt},#{createdAt},#{updatedAt})
+        ON DUPLICATE KEY UPDATE last_position=VALUES(last_position), read_percent=VALUES(read_percent), last_read_at=VALUES(last_read_at), updated_at=VALUES(updated_at)
+    </insert>
+
+</mapper>

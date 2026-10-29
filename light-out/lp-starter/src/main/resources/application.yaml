@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: lp-starter
+
+  # 数据源
+  datasource:
+    url: jdbc:mysql://localhost:3306/light_out?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: user
+    # TODO 生产环境请改为环境变量注入：password: ${DB_PASSWORD}
+    password: 3Me3f3nAEA
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+# 服务端口
+server:
+  port: 8080
+
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  # type-aliases-package 已移除：lpauth 和 lpcourse 都有 StudentClass 实体，
+  # 别名扫描会冲突；且所有 mapper XML 均使用全限定类名，并不依赖别名
+  configuration:
+    map-underscore-to-camel-case: true
+    # 注意：StdOutImpl 会把每条 SQL 与实参打到 stdout（含成绩、口令哈希等），
+    # 生产环境应删除此项，改用日志框架按级别输出
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 日志
+logging:
+  level:
+    com.learning: DEBUG
+
+# JWT 签名配置
+jwt:
+  # 必填：通过环境变量 JWT_SECRET 注入，至少 32 字节；缺失时应用启动失败（fail-fast）
+  # 仓库内不允许出现真实密钥
+  secret: ${JWT_SECRET:}
+  # 令牌有效期（小时）
+  expire-hours: 12
+
+# 口令策略
+security:
+  password:
+    # 存量无盐 MD5 账号的处理方式：
+    #   migrate（默认）登录成功后立即迁移为 BCrypt，旧哈希不再保留
+    #   reject        直接拒绝登录，要求管理员重置密码（会锁死尚未重置的存量账号）
+    legacy-md5: migrate

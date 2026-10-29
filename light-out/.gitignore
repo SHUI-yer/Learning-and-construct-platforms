@@ -1,0 +1,113 @@
+# ==============================================================
+# 后端 · light-out（Maven 多模块 / Spring Boot 3）
+#
+# 本文件位于后端根目录，规则对 lp-common、lp-auth、lp-course、
+# lp-assessment、lp-learning、lp-starter 全部递归生效，
+# 因此各子模块内不需要再放一份重复的 .gitignore。
+# ==============================================================
+
+# --------------------------------------------------------------
+# Maven 构建输出
+# --------------------------------------------------------------
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# 编译 / 打包产物
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# Maven Wrapper：properties 必须入库，wrapper jar 由首次 ./mvnw 自动下载
+.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+.mvn/timing.properties
+
+# 打包插件生成的文件
+.flattened-pom.xml
+dependency-reduced-pom.xml
+
+# Spring Initializr 生成的使用说明
+HELP.md
+
+# --------------------------------------------------------------
+# 运行时产物与日志
+# --------------------------------------------------------------
+logs/
+LOG/
+*.log
+hs_err_pid*
+replay_pid*
+*.hprof
+*.pid
+
+# 题库导入等功能产生的运行时上传目录
+uploads/
+
+# Spring Boot devtools 的本地重启触发文件
+.spring-boot-devtools.yml
+.spring-boot-devtools.yaml
+
+# --------------------------------------------------------------
+# 本地 / 私有配置（数据库、Redis、RabbitMQ、AI Key 等）
+# 仓库里只保留模板，真实账号密码禁止入库
+# --------------------------------------------------------------
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties
+**/application-secret.yml
+**/application-secret.yaml
+**/application-prod.yml
+**/application-prod.yaml
+**/application-prod.properties
+**/bootstrap-local.yml
+**/bootstrap-local.yaml
+
+# --------------------------------------------------------------
+# 测试与质量报告
+# --------------------------------------------------------------
+surefire-reports/
+failsafe-reports/
+jacoco.exec
+jacoco-report/
+site/
+
+# --------------------------------------------------------------
+# IDE 目录（各成员本地环境不同，统一忽略）
+# --------------------------------------------------------------
+### IntelliJ IDEA ###
+.idea/
+*.iml
+*.iws
+*.ipr
+
+### Eclipse / STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+# --------------------------------------------------------------
+# 操作系统
+# --------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+body{
+  font-family: 'Noto Serif SC', sans-serif;
+}
+
+/* 登录页右侧钢笔：轻微倾斜悬停浮动 */
+.pen-float {
+  animation: penFloat 5s ease-in-out infinite;
+}
+
+@keyframes penFloat {
+  0%, 100% { transform: translateY(0) rotate(6deg); }
+  50% { transform: translateY(-16px) rotate(6deg); }
+}
+
+/* 钢笔背后的金色氛围光晕：呼吸律动 */
+.pen-glow {
+  animation: penGlow 5s ease-in-out infinite;
+}
+
+@keyframes penGlow {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}

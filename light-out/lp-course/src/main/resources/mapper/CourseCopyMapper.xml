@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learning.lpcourse.mapper.CourseCopyMapper">
+    <insert id="insert">
+        INSERT INTO course_copy(
+            source_course_id,
+            target_course_id,
+            operator_id
+        )VALUES(
+                   #{sourceCourseId},
+                   #{targetCourseId},
+                   #{operatorId}
+               )
+    </insert>
+</mapper>

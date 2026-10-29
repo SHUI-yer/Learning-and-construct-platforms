@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learning.lpcourse.mapper.CourseMapper">
+
+    <resultMap id="CourseVOResultMap" type="com.learning.lpcourse.vo.CourseVO">
+        <id column="course_id" property="courseId"/>
+        <result column="course_name" property="courseName"/>
+        <result column="course_code" property="courseCode"/>
+        <result column="teacher_id" property="teacherId"/>
+        <result column="dept_id" property="deptId"/>
+        <result column="status" property="status"/>
+        <result column="semester" property="semester"/>
+        <result column="is_public" property="isPublic"/>
+        <result column="cover_url" property="coverUrl"/>
+        <result column="description" property="description"/>
+        <result column="version" property="version"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="courseId">
+        INSERT INTO course(
+            course_name,
+            course_code,
+            teacher_id,
+            dept_id,
+            status,
+            semester,
+            is_public,
+            cover_url,
+            description,
+            version
+        )VALUES(
+                   #{courseName},
+                   #{courseCode},
+                   #{teacherId},
+                   #{deptId},
+                   #{status},
+                   #{semester},
+                   #{isPublic},
+                   #{coverUrl},
+                   #{description},
+                   #{version}
+               )
+    </insert>
+
+    <select id="selectCoursePage" resultMap="CourseVOResultMap">
+        SELECT
+        course_id,
+        course_name,
+        course_code,
+        teacher_id,
+        dept_id,
+        status,
+        semester,
+        is_public,
+        cover_url,
+        description,
+        version,
+        created_at,
+        updated_at
+        FROM course
+        <where>
+            deleted_at IS NULL
+            <if test="query.courseName != null and query.courseName != ''">
+                AND course_name LIKE CONCAT('%',#{query.courseName},'%')
+            </if>
+            <if test="query.status != null">
+                AND status = #{query.status}
+            </if>
+            <if test="query.deptId != null">
+                AND dept_id = #{query.deptId}
+            </if>
+            <if test="query.semester != null and query.semester != ''">
+                AND semester = #{query.semester}
+            </if>
+        </where>
+        ORDER BY course_id DESC
+        LIMIT #{offset},#{pageSize}
+    </select>
+
+    <select id="selectCourseCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM course
+        <where>
+            deleted_at IS NULL
+            <if test="query.courseName != null and query.courseName != ''">
+                AND course_name LIKE CONCAT('%',#{query.courseName},'%')
+            </if>
+            <if test="query.status != null">
+                AND status = #{query.status}
+            </if>
+            <if test="query.deptId != null">
+                AND dept_id = #{query.deptId}
+            </if>
+            <if test="query.semester != null and query.semester != ''">
+                AND semester = #{query.semester}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectCourseById" resultMap="CourseVOResultMap">
+        SELECT
+            course_id,
+            course_name,
+            course_code,
+            teacher_id,
+            dept_id,
+            status,
+            semester,
+            is_public,
+            cover_url,
+            description,
+            version,
+            created_at,
+            updated_at
+        FROM course
+        WHERE course_id = #{courseId} AND deleted_at IS NULL
+    </select>
+
+    <update id="updateCourseStatus">
+        UPDATE course
+        SET status = #{status}, version = version + 1
+        WHERE course_id = #{courseId} AND deleted_at IS NULL AND version = #{version}
+    </update>
+
+    <select id="selectSourceCourse" resultMap="CourseVOResultMap">
+        SELECT
+            course_id,
+            course_name,
+            course_code,
+            dept_id,
+            semester,
+            is_public,
+            cover_url,
+            description
+        FROM course
+        WHERE course_id = #{sourceCourseId} AND deleted_at IS NULL
+    </select>
+
+    <update id="update">
+        UPDATE course
+        <set>
+            <if test="courseName != null">course_name = #{courseName},</if>
+            <if test="courseCode != null">course_code = #{courseCode},</if>
+            <if test="deptId != null">dept_id = #{deptId},</if>
+            <if test="semester != null">semester = #{semester},</if>
+            <if test="isPublic != null">is_public = #{isPublic},</if>
+            <if test="coverUrl != null">cover_url = #{coverUrl},</if>
+            <if test="description != null">description = #{description},</if>
+            version = version + 1
+        </set>
+        WHERE course_id = #{courseId} AND version = #{version}
+    </update>
+</mapper>

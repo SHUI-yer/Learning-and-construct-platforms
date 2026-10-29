@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learning.lpcourse.mapper.CourseStudentMapper">
+    <insert id="insertBatch">
+        INSERT INTO course_student (course_id,student_id,join_type)
+        VALUES
+        <foreach collection="list" separator="," item="item">
+            (#{item.courseId},#{item.studentId},#{item.joinType})
+        </foreach>
+    </insert>
+
+    <select id="selectStudentIdByCourseId" resultType="java.lang.Long">
+        SELECT student_id FROM course_student WHERE course_id = #{courseId}
+    </select>
+</mapper>
