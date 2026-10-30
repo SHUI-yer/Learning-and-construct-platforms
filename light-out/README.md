@@ -71,7 +71,7 @@ lp-common → lp-auth → lp-course → lp-assessment → lp-starter
 
 - JDK 17
 - MySQL 8（库名 `light_out`）
-- Redis（默认 `localhost:6379`，无密码）
+- Redis（默认 `localhost:6379`，密码通过 `SPRING_DATA_REDIS_PASSWORD` 注入）
 
 ### 1. 初始化数据库
 
@@ -168,15 +168,18 @@ java -jar lp-starter/target/lp-starter-0.0.1-SNAPSHOT.jar
 
 ### ⚠️ 凭据处理
 
-`application.yaml` 中**当前直接写着数据库账号与密码**。正确做法是让配置文件不含密码，由环境变量或本地 profile 注入（Spring Boot 环境变量优先级高于 `application.yaml`）：
+`application.yaml` 不保存数据库、Redis 或其他服务的真实密码。请先复制 `light-out/.env.example` 为本地 `.env` 并填写值；启动 Spring Boot 进程时，还需要将对应变量导出到进程环境（Docker Compose 自动读取 `.env`，普通 Maven 启动不会自动读取 `.env`）：
 
 ```bash
-set SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/light_out?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-set SPRING_DATASOURCE_USERNAME=your_user
+set SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/light_out?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+set SPRING_DATASOURCE_USERNAME=user
 set SPRING_DATASOURCE_PASSWORD=your_password
+set SPRING_DATA_REDIS_HOST=localhost
+set SPRING_DATA_REDIS_PORT=6379
+set SPRING_DATA_REDIS_PASSWORD=your_redis_password
 ```
 
-或新建 `lp-starter/src/main/resources/application-local.yaml`（已被 `.gitignore` 忽略）：
+或者复制 `lp-starter/src/main/resources/application-local.yaml.example` 为 `application-local.yaml`（真实文件已被 `.gitignore` 忽略）：
 
 ```yaml
 spring:
@@ -191,17 +194,7 @@ spring:
 
 ### 关于 `compose.yaml`
 
-`compose.yaml` 是 Spring Initializr 生成的模板，**不能直接与当前配置配套使用**：
-
-- 服务名/凭据为 `mydatabase` / `myuser` / `secret`，与 `application.yaml` 的 `light_out` / `user` 不一致；
-- 端口写成 `'3306'` 这种形式表示"映射到随机宿主机端口"，而配置里连的是固定 `localhost:3306`。
-
-如要使用，请先改成固定端口映射并统一库名与账号：
-
-```yaml
-ports:
-  - '3306:3306'
-```
+`compose.yaml` 是本地中间件编排，使用 `light-out/.env` 中的变量，不包含任何默认密码。启动前执行 `copy .env.example .env`（Linux/macOS 使用 `cp`），填写密码后运行 `docker compose up -d`。端口已固定映射为 MySQL `3306`、Redis `6379`、RabbitMQ `5672` 和管理控制台 `15672`。
 
 ---
 

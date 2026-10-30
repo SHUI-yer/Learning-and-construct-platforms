@@ -73,6 +73,7 @@ Learning and construct platforms/
 │   ├── lp-learning/               # 学习体验（进度、笔记、AI 问答、MQ、统计）※ 暂未接入启动链路
 │   ├── lp-starter/                # 唯一启动入口，聚合各业务模块
 │   ├── compose.yaml               # 本地中间件容器编排（MySQL / Redis / RabbitMQ）
+│   ├── .env.example               # 后端与本地中间件变量模板
 │   ├── 数据库light_out .sql        # 全量建表脚本（89 张表）
 │   └── README.md                  # 后端详细说明
 │
@@ -255,21 +256,23 @@ npm run lint      # ESLint 检查
 
 **必填：`JWT_SECRET`**（JWT 签名密钥，至少 32 字节）。缺失或过短时后端无法启动，请按[启动后端](#2-启动后端端口-8080)中的命令生成。
 
-当前 `light-out/lp-starter/src/main/resources/application.yaml` 里还留着本地开发用的数据库账号密码，仓库中不应长期保留真实凭据。推荐的做法是**保持配置文件里不含密码，改用环境变量或本地 profile 覆盖**：
+`light-out/lp-starter/src/main/resources/application.yaml` 只保留非敏感默认值，数据库、Redis、RabbitMQ 密码和 JWT 密钥均通过环境变量注入。仓库中提供 `light-out/.env.example` 作为变量清单；真实的 `light-out/.env` 不入库：
 
 ```bash
-# 方式一：环境变量（Spring Boot 宽松绑定，优先级高于 application.yaml）
+# Spring Boot 进程启动前设置环境变量（优先级高于 application.yaml）
 set JWT_SECRET=请替换为至少32字节的随机串
 set SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/light_out?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
 set SPRING_DATASOURCE_USERNAME=your_user
 set SPRING_DATASOURCE_PASSWORD=your_password
 set SPRING_DATA_REDIS_HOST=localhost
 set SPRING_DATA_REDIS_PORT=6379
+set SPRING_DATA_REDIS_PASSWORD=your_redis_password
 mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run
 ```
 
 ```yaml
-# 方式二：新建 light-out/lp-starter/src/main/resources/application-local.yaml（已被 .gitignore 忽略）
+# 也可以复制模板为 application-local.yaml（该文件已被 .gitignore 忽略）
+# 模板：light-out/lp-starter/src/main/resources/application-local.yaml.example
 spring:
   datasource:
     username: your_user
@@ -290,7 +293,9 @@ mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.pr
 | `jwt.expire-hours` | `12` | 令牌有效期（小时） |
 | `security.password.legacy-md5` | `migrate` | 存量 MD5 账号：`migrate` 登录后自动升级为 BCrypt，`reject` 要求重置 |
 | `spring.datasource.url` | `jdbc:mysql://localhost:3306/light_out` | 库名 `light_out` |
+| `spring.datasource.password` | `${SPRING_DATASOURCE_PASSWORD:}` | 通过环境变量注入 |
 | `spring.data.redis` | `localhost:6379`，db 0 | |
+| `spring.data.redis.password` | `${SPRING_DATA_REDIS_PASSWORD:}` | 通过环境变量注入 |
 | `mybatis.mapper-locations` | `classpath:mapper/*.xml` | |
 | `logging.level.com.learning` | `DEBUG` | |
 
@@ -336,14 +341,12 @@ mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.pr
 
 ## 安全须知
 
-> ⚠️ **在把本仓库推送到公开远程之前，请先处理以下问题。**
+> ⚠️ **任何真实凭据都不得进入 Git。** 本项目的生产凭据只保存在服务器环境文件中。
 
-1. **仓库中仍有明文凭据**，需要轮换并移出仓库：
-   - `light-out/项目结构.md`：服务器 IP、MySQL/Redis/RabbitMQ 账号与密码；
-   - `light-out/lp-starter/src/main/resources/application.yaml`：MySQL 账号与密码。
-2. **正确做法**：凭据改为环境变量或本地 profile 注入（见[环境变量与配置](#环境变量与配置)），仓库内只保留 `.env.example` / `application-local.yaml` 这类模板。
-3. **提交前自检**：`git status` 不应出现 `.env`、`application-local.yaml`、`target/`、`node_modules/`、`dist/` 等路径；`.gitignore` 已覆盖这些条目。
-4. 一旦敏感信息进入过 Git 历史，**仅删除文件是不够的**，必须轮换凭据；如有需要，可用 `git filter-repo` 清理历史后再推送。
+1. 生产凭据已轮换，并已从当前配置和项目文档移出。
+2. 真实值通过环境变量或服务器私有环境文件注入，仓库只保留 `.env.example` 和配置说明模板。
+3. 提交前运行 `pwsh ./scripts/check-sensitive.ps1`，并确认 `git status --ignored` 中本地 `.env`、构建产物和备份文件均未被跟踪。
+4. 旧凭据仍可能存在于 Git 历史；如远程仓库曾经可被非授权人员访问，应在团队确认后使用 `git filter-repo` 等工具清理历史，并协调一次强制推送。
 
 ### 已完成的加固
 

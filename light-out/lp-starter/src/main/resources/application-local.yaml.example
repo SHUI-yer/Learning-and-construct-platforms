@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/light_out?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: your_user
+    password: replace-me
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: replace-me
+      database: 0
+
+# Set JWT_SECRET in the process environment; do not put it in this file.

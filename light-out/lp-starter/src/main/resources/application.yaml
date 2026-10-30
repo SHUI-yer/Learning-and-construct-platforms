@@ -4,19 +4,18 @@ spring:
 
   # 数据源
   datasource:
-    url: jdbc:mysql://localhost:3306/light_out?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-    username: user
-    # TODO 生产环境请改为环境变量注入：password: ${DB_PASSWORD}
-    password: 3Me3f3nAEA
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/light_out?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true}
+    username: ${SPRING_DATASOURCE_USERNAME:user}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # Redis
   data:
     redis:
-      host: localhost
-      port: 6379
-      password:
-      database: 0
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      database: ${SPRING_DATA_REDIS_DATABASE:0}
       timeout: 3000ms
       lettuce:
         pool:

@@ -1,21 +1,23 @@
 services:
   mysql:
-    image: 'mysql:latest'
+    image: 'mysql:8.4'
     environment:
-      - 'MYSQL_DATABASE=mydatabase'
-      - 'MYSQL_PASSWORD=secret'
-      - 'MYSQL_ROOT_PASSWORD=verysecret'
-      - 'MYSQL_USER=myuser'
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-light_out}
+      MYSQL_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?set SPRING_DATASOURCE_PASSWORD in light-out/.env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in light-out/.env}
+      MYSQL_USER: ${SPRING_DATASOURCE_USERNAME:-user}
     ports:
-      - '3306'
+      - '3306:3306'
   rabbitmq:
-    image: 'rabbitmq:latest'
+    image: 'rabbitmq:3-management'
     environment:
-      - 'RABBITMQ_DEFAULT_PASS=secret'
-      - 'RABBITMQ_DEFAULT_USER=myuser'
+      RABBITMQ_DEFAULT_PASS: ${SPRING_RABBITMQ_PASSWORD:?set SPRING_RABBITMQ_PASSWORD in light-out/.env}
+      RABBITMQ_DEFAULT_USER: ${SPRING_RABBITMQ_USERNAME:-lp}
     ports:
-      - '5672'
+      - '5672:5672'
+      - '15672:15672'
   redis:
-    image: 'redis:latest'
+    image: 'redis:7'
+    command: ["redis-server", "--requirepass", "${SPRING_DATA_REDIS_PASSWORD:?set SPRING_DATA_REDIS_PASSWORD in light-out/.env}"]
     ports:
-      - '6379'
+      - '6379:6379'
