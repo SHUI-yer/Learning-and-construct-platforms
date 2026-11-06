@@ -42,8 +42,9 @@ public class CourseServiceImpl implements CourseService {
     public PageResult<CourseVO> getCoursePage(Long pageNum, Long pageSize, CourseQueryDTO query) {
         pageNum = pageNum < 1 ? 1 : pageNum;
         long offset = (pageNum - 1) * pageSize;
-        List<CourseVO> records = courseMapper.selectCoursePage(offset, pageSize, query);
-        Long total = courseMapper.selectCourseCount(query);
+        Long studentId = RoleConstant.STUDENT.equals(UserContext.getRoleCode()) ? requireStudentId() : null;
+        List<CourseVO> records = courseMapper.selectCoursePage(offset, pageSize, query, studentId);
+        Long total = courseMapper.selectCourseCount(query, studentId);
         return PageResult.build(records, total, pageNum, pageSize);
     }
 
@@ -168,7 +169,22 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public CourseVO getCourseInfo(Long courseId) {
-        return courseMapper.selectCourseById(courseId);
+        if (!RoleConstant.STUDENT.equals(UserContext.getRoleCode())) {
+            return courseMapper.selectCourseById(courseId);
+        }
+        CourseVO course = courseMapper.selectStudentCourseById(courseId, requireStudentId());
+        if (course == null) {
+            throw new ForbiddenException("课程不存在或无权查看");
+        }
+        return course;
+    }
+
+    private Long requireStudentId() {
+        Long studentId = UserContext.getUserId();
+        if (studentId == null) {
+            throw new ForbiddenException("登录状态无效，无法查看课程");
+        }
+        return studentId;
     }
 
     @Override
@@ -294,7 +310,9 @@ public class CourseServiceImpl implements CourseService {
             throw new NotFoundCourseException("课程不存在");
         }
         //权限：课程创建教师 或者管理员
-        if(!courseVO.getTeacherId().equals(loginUserId)
+        boolean isCourseTeacher = RoleConstant.TEACHER.equals(roleCode)
+                && courseVO.getTeacherId().equals(loginUserId);
+        if(!isCourseTeacher
                 &&!RoleConstant.SUPER_ADMIN.equals(roleCode)
                 &&!RoleConstant.DEPT_ADMIN.equals(roleCode)){
             throw new ForbiddenException("仅课程创建教师或者管理员可以编辑课程");

@@ -21,17 +21,22 @@ public interface CourseMapper {
      */
     List<CourseVO> selectCoursePage(@Param("offset") Long offset,
                                     @Param("pageSize") Long pageSize,
-                                    @Param("query") CourseQueryDTO query);
+                                    @Param("query") CourseQueryDTO query,
+                                    @Param("studentId") Long studentId);
 
     /**
      * 统计总数
      */
-    Long selectCourseCount(@Param("query") CourseQueryDTO query);
+    Long selectCourseCount(@Param("query") CourseQueryDTO query,
+                           @Param("studentId") Long studentId);
 
     /**
      * 根据id查询课程详情（过滤已删除）
      */
     CourseVO selectCourseById(@Param("courseId") Long courseId);
+
+    CourseVO selectStudentCourseById(@Param("courseId") Long courseId,
+                                     @Param("studentId") Long studentId);
 
     /**
      * 更新课程状态（审核使用）

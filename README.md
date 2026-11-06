@@ -118,8 +118,8 @@ Learning and construct platforms/
 |------|:----:|:----:|------|
 | 登录与鉴权 | ✅ | ✅ | `POST /login`，JWT + 本地存储，401/403 统一跳登录页 |
 | 五级角色模型 | ✅ | ✅ | `super_admin / dept_admin / teacher / assistant / student`，前后端常量一一对应 |
-| 课程管理与建设 | ✅ | ✅ | 课程增改查、导入、审核、复制、章节树与排序、资源增删改 |
-| 学生选课视图 | 🚧 | ✅ | 「我的课程」列表可用；课程详情页受权限前缀匹配缺陷影响，学生点击会被弹回首页（见[已知问题](#已知问题)） |
+| 课程管理与建设 | 🚧 | ✅ | 课程增改查、导入、审核、复制及章节树已有实现。Web 课程详情可新增和删除章节，已有章节的编辑和排序尚未接入页面 |
+| 学生选课视图 | 🚧 | ✅ | 学生可从「我的课程」打开已上线的公开课和已选课程；课程列表、详情和章节按登录身份校验 |
 | 任务与考核（教师端） | ✅ | ✅ | 任务发布、题库、组卷/自动组卷、提交批阅、成绩汇总、申诉复核、防作弊记录 |
 | 考试（学生端） | ✅ | ✅ | 开始考试、限时作答、提交、成绩与申诉，含倒计时与切屏记录 |
 | 个人中心 | 🚧 | 🚧 | 页面已存在，`src/api/user.ts` 中的用户信息接口仍是注释状态 |
@@ -364,8 +364,9 @@ mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.pr
 
 | 问题 | 影响 | 建议 |
 |------|------|------|
+| 课程分配与上线缺少 Web 操作入口 | 已有课程无法在页面上分配给学生或班级。教师创建的课程默认为草稿，页面缺少「提交审核」入口，管理员只能在页面上审核待审核课程。 | 待补「分配学生／班级」和「提交审核」。本地联调可向 `course_student` 写入课程与学生的关联，并由管理员调用 `POST /course/audit` 审核上线。新建课程时可通过 `POST /course/import` 一并传入 `studentIdList` 或 `classIdList`。 |
+| Web 课程详情缺少已有章节的编辑和排序入口 | 有课程编辑权限的教师和管理员可以新增顶级章节、添加子章节和删除章节，但无法在页面上修改已有章节标题或调整顺序。 | 后端接口 `PUT /course/chapter/update` 和 `PUT /course/chapter/sort` 已存在。待在章节树接入「编辑章节」和排序操作，保存后刷新章节树。 |
 | 菜单项指向不存在的路由 | `src/utils/permission.ts` 的 `MENU_CONFIG` 中有 `/learning`、`/tools/notebook`、`/tools/mindmap`、`/admin/users`、`/admin/roles`，但 `router.tsx` 未定义这些路由，点击后落入 404 兜底页 | 为未完成的菜单项加"敬请期待"占位页，或先移除对应菜单 |
-| 学生无法打开课程详情 | `/courses` 仅对教师/管理员开放，而 `canAccessPath` 用前缀匹配，`/courses/:id` 也被一并拒绝，学生在「我的课程」点卡片会被重定向回首页 | 在 `ROUTE_PERMISSIONS` 中为 `/courses/:id` 显式放行学生，或改为精确匹配 |
 | `lp-learning` 被排除在 reactor 之外 | 学习进度、笔记、AI 问答、MQ 消费、定时统计全部不在启动链路上，运行中的服务无法访问这些功能 | 补上 `lp-learning/pom.xml` 中缺失版本的 `knife4j` 依赖，取消 `light-out/pom.xml` 中的注释，并把模块加入 `lp-starter` 依赖与 `@MapperScan` |
 | 需求文档列出的 7 个模块目录不存在 | `lp-peer-review`、`lp-community`、`lp-ai-engine`、`lp-self-study`、`lp-cet`、`lp-message`、`lp-admin` 尚无代码 | 按迭代计划逐个落地，落地时同步更新本 README 的状态表 |
 | 后端配置文件硬编码数据库口令 | 安全风险 + 换环境需改代码 | 改为环境变量 / 本地 profile |

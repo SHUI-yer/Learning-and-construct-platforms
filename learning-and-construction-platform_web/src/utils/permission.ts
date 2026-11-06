@@ -1,3 +1,4 @@
+import { matchPath } from 'react-router-dom';
 import { ROLES, type RoleCode } from '../constants/roles';
 
 /**
@@ -179,10 +180,6 @@ export function filterMenuByRole(menus: MenuItem[], roleCode: RoleCode | null): 
  * 未列出的路由默认所有角色可访问（白名单模式）
  */
 export const ROUTE_PERMISSIONS: { path: string; roles: RoleCode[] }[] = [
-  // 课程详情：所有角色可访问（学生看自己的课程，教师管理自己的课程）
-  // 此处无需额外配置，因为 /courses 已对所有角色开放
-  // 如果将来需要限制，可在此添加
-
   // 学生考核区：菜单项只登记了 /my-assessment/tasks，
   // 考试页 /my-assessment/exam/:taskId、成绩页、申诉页不在其前缀下，需在此显式放行
   { path: '/my-assessment', roles: [ROLES.STUDENT] },
@@ -194,6 +191,9 @@ export const ROUTE_PERMISSIONS: { path: string; roles: RoleCode[] }[] = [
  */
 export function canAccessPath(path: string, roleCode: RoleCode | null): boolean {
   if (!roleCode) return false;
+
+  // 学生可以进入课程详情，课程是否可读由后端校验。
+  if (roleCode === ROLES.STUDENT && matchPath('/courses/:id', path)) return true;
 
   // 先检查额外路由权限配置
   for (const perm of ROUTE_PERMISSIONS) {

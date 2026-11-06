@@ -51,9 +51,12 @@ export default function CourseDetail() {
   const { roleCode, userId } = useAuth();
   const isAdmin = roleCode === ROLES.SUPER_ADMIN || roleCode === ROLES.DEPT_ADMIN;
   const isTeacher = roleCode === ROLES.TEACHER;
+  const isStudent = roleCode === ROLES.STUDENT;
+  const listPath = isStudent ? '/my-courses' : '/courses';
+  const listLabel = isStudent ? '我的课程' : '课程管理';
 
   // 课程数据
-  const { data: course, isLoading: courseLoading } = useCourse(courseId);
+  const { data: course, error: courseError, isLoading: courseLoading } = useCourse(courseId);
   const { data: chapters, isLoading: treeLoading, refetch: refetchTree } = useChapterTree(courseId);
 
   // 编辑课程弹窗
@@ -261,10 +264,10 @@ export default function CourseDetail() {
     );
   }
 
-  if (!course) {
+  if (courseError || !course) {
     return (
-      <Empty description="课程不存在或已被删除">
-        <Button type="primary" onClick={() => navigate(-1)}>返回</Button>
+      <Empty description={courseError?.message ?? '课程不存在或已被删除'}>
+        <Button type="primary" onClick={() => navigate(listPath)}>返回{listLabel}</Button>
       </Empty>
     );
   }
@@ -276,7 +279,7 @@ export default function CourseDetail() {
       {/* ===== 面包屑 ===== */}
       <Breadcrumb style={{ marginBottom: 16 }} items={[
         { title: <a onClick={() => navigate('/')}>首页</a> },
-        { title: <a onClick={() => navigate('/courses')}>课程管理</a> },
+        { title: <a onClick={() => navigate(listPath)}>{listLabel}</a> },
         { title: course.courseName },
       ]} />
 

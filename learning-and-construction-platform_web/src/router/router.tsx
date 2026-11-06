@@ -51,7 +51,7 @@ const routes = [
         path: 'courses',
         element: <CourseList />,
       },
-      // 课程详情（所有角色可访问，权限由页面内部控制）
+      // 课程详情（学生可进入，课程读取权限由后端校验）
       {
         path: 'courses/:id',
         element: <CourseDetail />,

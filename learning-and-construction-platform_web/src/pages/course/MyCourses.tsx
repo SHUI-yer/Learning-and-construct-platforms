@@ -49,7 +49,7 @@ export default function MyCourses() {
   const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState('');
 
-  // 学生端查看课程列表（公开课程）
+  // 后端按当前学生过滤，只返回已上线的公开课和已选课。
   const { data, isLoading } = useCourses(1, 50, { status: 2 }); // status=2 已发布
 
   // 前端搜索过滤

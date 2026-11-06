@@ -45,8 +45,7 @@
                )
     </insert>
 
-    <select id="selectCoursePage" resultMap="CourseVOResultMap">
-        SELECT
+    <sql id="courseColumns">
         course_id,
         course_name,
         course_code,
@@ -60,9 +59,29 @@
         version,
         created_at,
         updated_at
+    </sql>
+
+    <sql id="studentCourseScope">
+        AND course.status = 2
+        AND (
+            course.is_public = 1
+            OR EXISTS (
+                SELECT 1
+                FROM course_student
+                WHERE course_student.course_id = course.course_id
+                  AND course_student.student_id = #{studentId}
+            )
+        )
+    </sql>
+
+    <select id="selectCoursePage" resultMap="CourseVOResultMap">
+        SELECT <include refid="courseColumns"/>
         FROM course
         <where>
             deleted_at IS NULL
+            <if test="studentId != null">
+                <include refid="studentCourseScope"/>
+            </if>
             <if test="query.courseName != null and query.courseName != ''">
                 AND course_name LIKE CONCAT('%',#{query.courseName},'%')
             </if>
@@ -85,6 +104,9 @@
         FROM course
         <where>
             deleted_at IS NULL
+            <if test="studentId != null">
+                <include refid="studentCourseScope"/>
+            </if>
             <if test="query.courseName != null and query.courseName != ''">
                 AND course_name LIKE CONCAT('%',#{query.courseName},'%')
             </if>
@@ -101,22 +123,16 @@
     </select>
 
     <select id="selectCourseById" resultMap="CourseVOResultMap">
-        SELECT
-            course_id,
-            course_name,
-            course_code,
-            teacher_id,
-            dept_id,
-            status,
-            semester,
-            is_public,
-            cover_url,
-            description,
-            version,
-            created_at,
-            updated_at
+        SELECT <include refid="courseColumns"/>
         FROM course
         WHERE course_id = #{courseId} AND deleted_at IS NULL
+    </select>
+
+    <select id="selectStudentCourseById" resultMap="CourseVOResultMap">
+        SELECT <include refid="courseColumns"/>
+        FROM course
+        WHERE course_id = #{courseId} AND deleted_at IS NULL
+        <include refid="studentCourseScope"/>
     </select>
 
     <update id="updateCourseStatus">
