@@ -331,6 +331,7 @@ mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.pr
 | 文档 | 内容 |
 |------|------|
 | [docs/功能整合文档.md](docs/功能整合文档.md) | **需求基线**：13 个模块的功能说明、角色分工、核心业务流程 |
+| [docs/本地测试库清单.md](docs/本地测试库清单.md) | 本地演示账号、课程场景和 89 张表的记录数 |
 | [learning-and-construction-platform_web/README.md](learning-and-construction-platform_web/README.md) | 前端：目录结构、路由表、接口层与状态管理约定 |
 | [learning-and-construction-platform_web/README.en.md](learning-and-construction-platform_web/README.en.md) | 前端说明（英文版） |
 | [learning-and-construction-platform_web/功能分工.md](learning-and-construction-platform_web/功能分工.md) | 前端团队分工与三阶段开发计划 |
