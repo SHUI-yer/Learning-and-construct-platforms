@@ -11,6 +11,7 @@ import com.learning.assessment.support.AssessmentAccessGuard;
 import com.learning.assessment.vo.GradeDesignVO;
 import com.learning.assessment.vo.TaskVO;
 import com.learning.lpcommon.exception.BaseException;
+import com.learning.lpcommon.exception.ConflictException;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -130,7 +131,7 @@ public class TaskServiceImpl implements TaskService {
 
         int rows = taskMapper.update(task);
         if (rows == 0) {
-            throw new BaseException("任务已被他人修改，请刷新后重试");
+            throw new ConflictException("任务已被他人修改，请刷新后重试");
         }
 
         Task updated = taskMapper.selectById(dto.getTaskId());
@@ -204,18 +205,30 @@ public class TaskServiceImpl implements TaskService {
         if (task == null) {
             throw new BaseException("任务不存在或已删除");
         }
+        accessGuard.requireTaskReadable(task, "查看任务");
         return TaskVO.fromEntity(task);
     }
 
     @Override
     public List<TaskVO> listTasksByCourse(Long courseId) {
+        accessGuard.requireCourseAssessmentAccess(courseId, "查看课程任务");
         List<Task> list = taskMapper.selectByCourseId(courseId);
+        if (accessGuard.isStudent()) {
+            list = list.stream().filter(accessGuard::isTaskPublished).toList();
+        }
         return TaskVO.fromEntityList(list);
     }
 
     @Override
     public List<TaskVO> listTasksByConditions(Long courseId, String taskType, String keyword) {
+        if (courseId == null) {
+            throw new BaseException("课程ID不能为空");
+        }
+        accessGuard.requireCourseAssessmentAccess(courseId, "搜索课程任务");
         List<Task> list = taskMapper.selectByConditions(courseId, taskType, keyword);
+        if (accessGuard.isStudent()) {
+            list = list.stream().filter(accessGuard::isTaskPublished).toList();
+        }
         return TaskVO.fromEntityList(list);
     }
 }

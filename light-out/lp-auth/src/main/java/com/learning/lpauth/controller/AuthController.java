@@ -8,6 +8,7 @@ import com.learning.lpauth.service.UserService;
 import com.learning.lpauth.vo.LoginVO;
 import com.learning.lpcommon.result.Result;
 import com.learning.lpcommon.utils.JwtUtil;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,7 +28,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public Result<LoginVO> login(@RequestBody LoginDTO loginDTO) {
+    public Result<LoginVO> login(@Valid @RequestBody LoginDTO loginDTO) {
         UserLoginInfo userLoginInfo = userService.login(loginDTO);
         User user = userLoginInfo.getUser();
         Role role = userLoginInfo.getRole();

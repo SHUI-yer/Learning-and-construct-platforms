@@ -10,4 +10,6 @@ public interface CourseStudentMapper {
     void insertBatch(@Param("list") List<CourseStudent> list);
     // 查询课程已存在学生ID（去重防止唯一索引冲突）
     List<Long> selectStudentIdByCourseId(@Param("courseId") Long courseId);
+    int countByCourseAndStudent(@Param("courseId") Long courseId,
+                                @Param("studentId") Long studentId);
 }

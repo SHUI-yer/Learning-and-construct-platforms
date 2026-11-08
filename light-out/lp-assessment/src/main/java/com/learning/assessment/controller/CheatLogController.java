@@ -5,6 +5,7 @@ import com.learning.assessment.service.CheatLogService;
 import com.learning.assessment.vo.CheatLogVO;
 import com.learning.lpcommon.result.Result;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public class CheatLogController {
     // ========== 异常行为记录 ==========
 
     @PostMapping("/record")
-    public Result<List<CheatLogVO>> record(@RequestBody CheatLogRecordDTO dto) {
+    public Result<List<CheatLogVO>> record(@Valid @RequestBody CheatLogRecordDTO dto) {
         return Result.success(cheatLogService.record(dto));
     }
 

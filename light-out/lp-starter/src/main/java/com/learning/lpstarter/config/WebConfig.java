@@ -2,33 +2,37 @@ package com.learning.lpstarter.config;
 
 
 import com.learning.lpcommon.interceptors.LoginInterceptor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-@Slf4j
 @Configuration
+@EnableConfigurationProperties(CorsProperties.class)
 public class WebConfig implements WebMvcConfigurer {
-    @Autowired
-    private LoginInterceptor loginInterceptor;
+    private final LoginInterceptor loginInterceptor;
+    private final CorsProperties corsProperties;
+
+    public WebConfig(LoginInterceptor loginInterceptor, CorsProperties corsProperties) {
+        this.loginInterceptor = loginInterceptor;
+        this.corsProperties = corsProperties;
+    }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/login");
+                .excludePathPatterns("/login", "/actuator/health/**", "/actuator/info");
     }
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("*")
+                .allowedOrigins(corsProperties.getAllowedOrigins().toArray(String[]::new))
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(true)
+                .allowedHeaders("Authorization", "Content-Type", "Accept", "X-Requested-With")
+                .allowCredentials(false)
                 .maxAge(3600);
     }
 }

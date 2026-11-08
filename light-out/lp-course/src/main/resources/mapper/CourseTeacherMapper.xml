@@ -5,4 +5,9 @@
         INSERT INTO course_teacher (course_id,teacher_id,role)
         VALUES (#{courseId},#{teacherId},#{role})
     </insert>
+
+    <select id="countByCourseAndTeacher" resultType="int">
+        SELECT COUNT(*) FROM course_teacher
+        WHERE course_id = #{courseId} AND teacher_id = #{teacherId}
+    </select>
 </mapper>

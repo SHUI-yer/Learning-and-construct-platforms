@@ -1,0 +1,262 @@
+name: CI and production deploy
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: light-out/pom.xml
+
+      - name: Test and package backend
+        run: bash ./mvnw -B -ntp verify
+        working-directory: light-out
+
+      - name: Upload backend artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-${{ github.sha }}
+          path: light-out/lp-starter/target/lp-starter-0.0.1-SNAPSHOT.jar
+          if-no-files-found: error
+          retention-days: 7
+
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: learning-and-construction-platform_web
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: learning-and-construction-platform_web/package-lock.json
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --registry=https://registry.npmjs.org --omit=dev --audit-level=high
+
+      - name: Upload frontend artifact
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-${{ github.sha }}
+          path: learning-and-construction-platform_web/dist
+          if-no-files-found: error
+          retention-days: 7
+
+  sensitive-information:
+    name: Sensitive information
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out complete history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select comparison commit
+        id: comparison
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "base=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Scan changed files for credentials
+        shell: pwsh
+        run: ./scripts/check-sensitive.ps1 -BaseRef '${{ steps.comparison.outputs.base }}'
+
+  deployment-script-tests:
+    name: Deployment script tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Check shell syntax
+        shell: bash
+        run: |
+          bash -n light-out/scripts/activate-release.sh
+          bash -n light-out/scripts/backup-db.sh
+          bash -n light-out/scripts/restore-db.sh
+          bash -n light-out/scripts/test-activate-release.sh
+
+      - name: Test health check and automatic rollback
+        shell: bash
+        run: bash light-out/scripts/test-activate-release.sh
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Reject newly introduced vulnerable dependencies
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  deployment-eligibility:
+    name: Authorize production deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend, frontend, sensitive-information, deployment-script-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Verify that main was updated by a merged pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls?per_page=100" \
+            | jq --exit-status 'any(.[]; .merged_at != null and .base.ref == "main")' >/dev/null
+
+      - name: Refuse to deploy a stale main commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/ref/heads/main" \
+            | jq --exit-status --arg expected "$GITHUB_SHA" '.object.sha == $expected' >/dev/null
+
+  deploy:
+    name: Deploy production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [backend, frontend, sensitive-information, deployment-script-tests, deployment-eligibility]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+    concurrency:
+      group: production-deployment
+      cancel-in-progress: false
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
+      DEPLOY_ROOT: ${{ vars.DEPLOY_ROOT || '/opt/learning-platform' }}
+      DEPLOY_SERVICE: ${{ vars.DEPLOY_SERVICE || 'learning-platform' }}
+      DEPLOY_ENV_FILE: ${{ vars.DEPLOY_ENV_FILE || '/home/ubuntu/.learning-platform.env' }}
+      DEPLOY_HEALTH_URL: ${{ vars.DEPLOY_HEALTH_URL || 'http://127.0.0.1:8081/actuator/health/readiness' }}
+      AUTO_ROLLBACK_APPLICATION: ${{ vars.AUTO_ROLLBACK_APPLICATION || 'true' }}
+    steps:
+      - name: Check out deployment scripts
+        uses: actions/checkout@v4
+
+      - name: Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-${{ github.sha }}
+          path: artifacts/backend
+
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-${{ github.sha }}
+          path: artifacts/web
+
+      - name: Validate deployment configuration
+        shell: bash
+        run: |
+          [[ -n "$DEPLOY_HOST" && -n "$DEPLOY_USER" && -n "$DEPLOY_SSH_KEY" && -n "$DEPLOY_KNOWN_HOSTS" ]]
+          [[ "$DEPLOY_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$DEPLOY_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          [[ "$DEPLOY_PORT" =~ ^[0-9]+$ ]]
+          (( DEPLOY_PORT >= 1 && DEPLOY_PORT <= 65535 ))
+          [[ "$DEPLOY_ROOT" =~ ^/[A-Za-z0-9._/-]+$ && "$DEPLOY_ROOT" != "/" ]]
+          [[ "$DEPLOY_SERVICE" =~ ^[A-Za-z0-9_.@-]+$ ]]
+          [[ "$DEPLOY_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ ]]
+          [[ "$DEPLOY_HEALTH_URL" =~ ^http://127\.0\.0\.1:[0-9]+/actuator/health/readiness$ ]]
+          [[ "$AUTO_ROLLBACK_APPLICATION" == "true" || "$AUTO_ROLLBACK_APPLICATION" == "false" ]]
+
+      - name: Build immutable release archive
+        shell: bash
+        run: |
+          mkdir -p release/backend release/web release/scripts
+          cp artifacts/backend/lp-starter-0.0.1-SNAPSHOT.jar release/backend/lp-starter.jar
+          cp -a artifacts/web/. release/web/
+          cp light-out/scripts/backup-db.sh light-out/scripts/restore-db.sh release/scripts/
+          tar -czf "${GITHUB_SHA}.tar.gz" -C release .
+
+      - name: Configure SSH host verification
+        shell: bash
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 0600 ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 0600 ~/.ssh/known_hosts
+
+      - name: Upload release
+        shell: bash
+        run: |
+          ssh -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 \
+            -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "mkdir -p '$DEPLOY_ROOT/incoming' '$DEPLOY_ROOT/releases'"
+          scp -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 \
+            -P "$DEPLOY_PORT" "${GITHUB_SHA}.tar.gz" \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_ROOT/incoming/${GITHUB_SHA}.tar.gz"
+
+      - name: Back up, activate, and verify release
+        shell: bash
+        run: |
+          ssh -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 \
+            -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "bash -s -- '$GITHUB_SHA' '$DEPLOY_ROOT' '$DEPLOY_SERVICE' '$DEPLOY_ENV_FILE' '$DEPLOY_HEALTH_URL' '$AUTO_ROLLBACK_APPLICATION'" \
+            < light-out/scripts/activate-release.sh

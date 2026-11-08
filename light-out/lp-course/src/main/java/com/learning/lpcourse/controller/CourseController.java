@@ -8,8 +8,11 @@ import com.learning.lpcourse.vo.ChapterTreeVO;
 import com.learning.lpcourse.vo.CourseVO;
 import com.learning.lpcommon.result.PageResult;
 import com.learning.lpcommon.result.Result;
+import com.learning.lpcommon.validation.ValidationGroups;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +20,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/course")
 @RequiredArgsConstructor
+@Validated
 public class CourseController {
 
     private final CourseService courseService;
@@ -30,7 +34,7 @@ public class CourseController {
     public Result<PageResult<CourseVO>> getCoursePage(
             @RequestParam(defaultValue = "1") Long pageNum,
             @RequestParam(defaultValue = "10") Long pageSize,
-            CourseQueryDTO query
+            @Valid CourseQueryDTO query
     ) {
         PageResult<CourseVO> pageResult = courseService.getCoursePage(pageNum, pageSize, query);
         return Result.success(pageResult);
@@ -49,7 +53,7 @@ public class CourseController {
      * 教师自主创建课程
      */
     @PostMapping("/create")
-    public Result<Long> createCourse(@RequestBody CourseCreateDTO dto) {
+    public Result<Long> createCourse(@Valid @RequestBody CourseCreateDTO dto) {
         Long id = courseService.createCourse(dto);
         return Result.success(id);
     }
@@ -57,7 +61,9 @@ public class CourseController {
      * 管理员导入创建课程
      */
     @PostMapping("/import")
-    public Result<Void> importCourse(@RequestBody List<CourseImportItemDTO> itemList) {
+    public Result<Void> importCourse(
+            @NotEmpty(message = "导入课程数据不能为空")
+            @RequestBody List<@Valid CourseImportItemDTO> itemList) {
         courseService.importCourse(itemList);
         return Result.success();
     }
@@ -66,7 +72,7 @@ public class CourseController {
      * 课程审核（管理员）
      */
     @PostMapping("/audit")
-    public Result<Boolean> auditCourse(@RequestBody CourseAuditDTO dto) {
+    public Result<Boolean> auditCourse(@Valid @RequestBody CourseAuditDTO dto) {
         Boolean success = courseService.auditCourse(dto);
         return Result.success(success);
     }
@@ -75,7 +81,7 @@ public class CourseController {
      * 复制课程
      */
     @PostMapping("/copy")
-    public Result<Long> copyCourse(@RequestBody CourseCopyDTO dto) {
+    public Result<Long> copyCourse(@Valid @RequestBody CourseCopyDTO dto) {
         Long newId = courseService.copyCourse(dto);
         return Result.success(newId);
     }
@@ -83,12 +89,13 @@ public class CourseController {
 
     //============章节接口============
     @PostMapping("/chapter/add")
-    public Result<Void> addChapter(@RequestBody ChapterDTO dto){
+    public Result<Void> addChapter(@Valid @RequestBody ChapterDTO dto){
         return chapterService.addChapter(dto);
     }
 
     @PutMapping("/chapter/update")
-    public Result<Void> updateChapter(@RequestBody ChapterDTO dto){
+    public Result<Void> updateChapter(
+            @Validated(ValidationGroups.Update.class) @RequestBody ChapterDTO dto){
         return chapterService.updateChapter(dto);
     }
 
@@ -104,12 +111,13 @@ public class CourseController {
 
     //============资源接口============
     @PostMapping("/resource/add")
-    public Result<Void> addResource(@RequestBody ContentResourceDTO dto){
+    public Result<Void> addResource(@Valid @RequestBody ContentResourceDTO dto){
         return contentResourceService.addResource(dto);
     }
 
     @PutMapping("/resource/update")
-    public Result<Void> updateResource(@RequestBody ContentResourceDTO dto){
+    public Result<Void> updateResource(
+            @Validated(ValidationGroups.Update.class) @RequestBody ContentResourceDTO dto){
         return contentResourceService.updateResource(dto);
     }
 
@@ -120,7 +128,7 @@ public class CourseController {
 
     //========迭代：课程编辑接口========
     @PutMapping("/update")
-    public Result<Void> updateCourse(@RequestBody CourseUpdateDTO dto){
+    public Result<Void> updateCourse(@Valid @RequestBody CourseUpdateDTO dto){
         return courseService.updateCourse(dto);
     }
 
@@ -129,7 +137,7 @@ public class CourseController {
      * PUT /course/chapter/sort
      */
     @PutMapping("/chapter/sort")
-    public Result<Void> sortChapter(@RequestBody ChapterSortDTO sortDTO){
+    public Result<Void> sortChapter(@Valid @RequestBody ChapterSortDTO sortDTO){
         return chapterService.sortChapter(sortDTO);
     }
 }

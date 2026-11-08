@@ -1,21 +1,41 @@
 package com.learning.lpcourse.dto;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
 public class CourseImportItemDTO {
+    @NotBlank(message = "课程名称不能为空")
+    @Size(max = 128, message = "课程名称不能超过128个字符")
     private String courseName;
+    @Size(max = 64, message = "课程编码不能超过64个字符")
     private String courseCode;
+    @Positive(message = "分院ID必须为正数")
     private Long deptId;
+    @NotBlank(message = "学期不能为空")
+    @Size(max = 32, message = "学期不能超过32个字符")
     private String semester;
+    @NotNull(message = "是否公开不能为空")
+    @Min(value = 0, message = "是否公开只能为0或1")
+    @Max(value = 1, message = "是否公开只能为0或1")
     private Integer isPublic;
+    @Size(max = 512, message = "封面地址不能超过512个字符")
     private String coverUrl;
+    @Size(max = 5000, message = "课程描述不能超过5000个字符")
     private String description;
+    @NotNull(message = "授课教师ID不能为空")
+    @Positive(message = "授课教师ID必须为正数")
     private Long teacherId;
     /** 直接指定学生ID列表（二选一，优先级低于班级） */
-    private List<Long> studentIdList;
+    private List<@Positive(message = "学生ID必须为正数") Long> studentIdList;
     /** 行政班级ID列表，自动关联班级下全部学生（教务批量导入推荐） */
-    private List<Long> classIdList;
+    private List<@Positive(message = "班级ID必须为正数") Long> classIdList;
 }

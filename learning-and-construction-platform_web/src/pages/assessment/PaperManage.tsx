@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Table, Button, Input, Select, Tag, Space, Card, Modal, Form,
   message, Row, Col, Tabs, Drawer, InputNumber, Switch, DatePicker, Popconfirm,
@@ -90,12 +90,6 @@ function PaperFormModal({
       if (err instanceof Error) message.error(err.message);
     }
   }, [editPaper, form]);
-
-  // 弹窗打开且为编辑时初始化（拉取试卷详情回填草稿）
-  useEffect(() => {
-    if (open && editPaper) void initEdit();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
 
   /** 提交：手动 -> create/update；智能 -> autoGenerate */
   const handleSubmit = useCallback(async () => {
@@ -400,6 +394,9 @@ function PaperFormModal({
     <Modal
       title={editPaper ? '编辑试卷' : '新建试卷'}
       open={open}
+      afterOpenChange={(visible) => {
+        if (visible && editPaper) void initEdit();
+      }}
       onCancel={onCancel}
       onOk={handleSubmit}
       confirmLoading={loading}

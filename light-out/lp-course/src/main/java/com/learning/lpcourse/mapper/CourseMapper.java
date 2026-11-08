@@ -21,12 +21,16 @@ public interface CourseMapper {
      */
     List<CourseVO> selectCoursePage(@Param("offset") Long offset,
                                     @Param("pageSize") Long pageSize,
-                                    @Param("query") CourseQueryDTO query);
+                                    @Param("query") CourseQueryDTO query,
+                                    @Param("accessScope") String accessScope,
+                                    @Param("userId") Long userId);
 
     /**
      * 统计总数
      */
-    Long selectCourseCount(@Param("query") CourseQueryDTO query);
+    Long selectCourseCount(@Param("query") CourseQueryDTO query,
+                           @Param("accessScope") String accessScope,
+                           @Param("userId") Long userId);
 
     /**
      * 根据id查询课程详情（过滤已删除）

@@ -6,7 +6,10 @@ import com.learning.assessment.service.TaskService;
 import com.learning.assessment.vo.GradeDesignVO;
 import com.learning.assessment.vo.TaskVO;
 import com.learning.lpcommon.result.Result;
+import com.learning.lpcommon.validation.ValidationGroups;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +24,7 @@ public class TaskController {
     // ========== 成绩构成 ==========
 
     @PostMapping("/gradeDesign/save")
-    public Result<List<GradeDesignVO>> saveGradeDesign(@RequestBody GradeDesignDTO gradeDesignDTO) {
+    public Result<List<GradeDesignVO>> saveGradeDesign(@Valid @RequestBody GradeDesignDTO gradeDesignDTO) {
         List<GradeDesignVO> result = taskService.saveGradeDesign(gradeDesignDTO);
         return Result.success(result);
     }
@@ -35,13 +38,14 @@ public class TaskController {
     // ========== 任务管理 ==========
 
     @PostMapping("/create")
-    public Result<TaskVO> createTask(@RequestBody TaskCreateDTO dto) {
+    public Result<TaskVO> createTask(@Valid @RequestBody TaskCreateDTO dto) {
         TaskVO result = taskService.createTask(dto);
         return Result.success(result);
     }
 
     @PutMapping("/update")
-    public Result<TaskVO> updateTask(@RequestBody TaskCreateDTO dto) {
+    public Result<TaskVO> updateTask(
+            @Validated(ValidationGroups.Update.class) @RequestBody TaskCreateDTO dto) {
         TaskVO result = taskService.updateTask(dto);
         return Result.success(result);
     }

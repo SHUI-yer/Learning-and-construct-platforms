@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card, Tree, Tag, Button, Descriptions, Breadcrumb, Space,
   Spin, Empty, Typography, Modal, Form, Input, InputNumber, Select,
-  message, Popconfirm, Tooltip, Badge,
+  message, Popconfirm, Tooltip, Badge, type TreeDataNode,
 } from 'antd';
 import {
   EditOutlined, PlusOutlined, DeleteOutlined,
@@ -192,7 +192,7 @@ export default function CourseDetail() {
   }, [refetchTree]);
 
   /** 将章节树转为 Ant Design Tree 数据 */
-  const buildTreeData = (nodes: ChapterTreeVO[]): any[] => {
+  const buildTreeData = (nodes: ChapterTreeVO[]): TreeDataNode[] => {
     return nodes.map((node) => ({
       key: `chapter-${node.chapterId}`,
       title: (

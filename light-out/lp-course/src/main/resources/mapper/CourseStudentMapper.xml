@@ -12,4 +12,9 @@
     <select id="selectStudentIdByCourseId" resultType="java.lang.Long">
         SELECT student_id FROM course_student WHERE course_id = #{courseId}
     </select>
+
+    <select id="countByCourseAndStudent" resultType="int">
+        SELECT COUNT(*) FROM course_student
+        WHERE course_id = #{courseId} AND student_id = #{studentId}
+    </select>
 </mapper>

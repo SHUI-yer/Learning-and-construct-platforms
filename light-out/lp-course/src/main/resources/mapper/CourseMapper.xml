@@ -60,42 +60,68 @@
         version,
         created_at,
         updated_at
-        FROM course
+        FROM course c
         <where>
-            deleted_at IS NULL
+            c.deleted_at IS NULL
+            <if test="accessScope == 'teaching'">
+                AND (c.teacher_id = #{userId} OR EXISTS (
+                    SELECT 1 FROM course_teacher ct
+                    WHERE ct.course_id = c.course_id AND ct.teacher_id = #{userId}
+                ))
+            </if>
+            <if test="accessScope == 'student'">
+                AND c.status = 2
+                AND (c.is_public = 1 OR EXISTS (
+                    SELECT 1 FROM course_student cs
+                    WHERE cs.course_id = c.course_id AND cs.student_id = #{userId}
+                ))
+            </if>
             <if test="query.courseName != null and query.courseName != ''">
-                AND course_name LIKE CONCAT('%',#{query.courseName},'%')
+                AND c.course_name LIKE CONCAT('%',#{query.courseName},'%')
             </if>
             <if test="query.status != null">
-                AND status = #{query.status}
+                AND c.status = #{query.status}
             </if>
             <if test="query.deptId != null">
-                AND dept_id = #{query.deptId}
+                AND c.dept_id = #{query.deptId}
             </if>
             <if test="query.semester != null and query.semester != ''">
-                AND semester = #{query.semester}
+                AND c.semester = #{query.semester}
             </if>
         </where>
-        ORDER BY course_id DESC
+        ORDER BY c.course_id DESC
         LIMIT #{offset},#{pageSize}
     </select>
 
     <select id="selectCourseCount" resultType="java.lang.Long">
         SELECT COUNT(*)
-        FROM course
+        FROM course c
         <where>
-            deleted_at IS NULL
+            c.deleted_at IS NULL
+            <if test="accessScope == 'teaching'">
+                AND (c.teacher_id = #{userId} OR EXISTS (
+                    SELECT 1 FROM course_teacher ct
+                    WHERE ct.course_id = c.course_id AND ct.teacher_id = #{userId}
+                ))
+            </if>
+            <if test="accessScope == 'student'">
+                AND c.status = 2
+                AND (c.is_public = 1 OR EXISTS (
+                    SELECT 1 FROM course_student cs
+                    WHERE cs.course_id = c.course_id AND cs.student_id = #{userId}
+                ))
+            </if>
             <if test="query.courseName != null and query.courseName != ''">
-                AND course_name LIKE CONCAT('%',#{query.courseName},'%')
+                AND c.course_name LIKE CONCAT('%',#{query.courseName},'%')
             </if>
             <if test="query.status != null">
-                AND status = #{query.status}
+                AND c.status = #{query.status}
             </if>
             <if test="query.deptId != null">
-                AND dept_id = #{query.deptId}
+                AND c.dept_id = #{query.deptId}
             </if>
             <if test="query.semester != null and query.semester != ''">
-                AND semester = #{query.semester}
+                AND c.semester = #{query.semester}
             </if>
         </where>
     </select>
@@ -130,11 +156,16 @@
             course_id,
             course_name,
             course_code,
+            teacher_id,
             dept_id,
+            status,
             semester,
             is_public,
             cover_url,
-            description
+            description,
+            version,
+            created_at,
+            updated_at
         FROM course
         WHERE course_id = #{sourceCourseId} AND deleted_at IS NULL
     </select>

@@ -1,0 +1,22 @@
+[Unit]
+Description=Learning Platform verified MySQL backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/learning-platform/current
+Environment=ENV_FILE=/home/ubuntu/.learning-platform.env
+Environment=BACKUP_DIR=/home/ubuntu/backups/learning-platform
+Environment=BACKUP_RETENTION_DAYS=14
+UMask=0077
+ExecStart=/usr/bin/bash /opt/learning-platform/current/scripts/backup-db.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/ubuntu/backups/learning-platform

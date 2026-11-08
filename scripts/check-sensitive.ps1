@@ -1,15 +1,29 @@
 [CmdletBinding()]
-param()
+param(
+    [string]$BaseRef
+)
 
 $ErrorActionPreference = 'Stop'
 
-$stagedFiles = @(git diff --cached --name-only --diff-filter=ACMR)
+$allowedProductionConfig = 'light-out/lp-starter/src/main/resources/application-prod.yaml'
+
+if ($BaseRef) {
+    git cat-file -e "$BaseRef`^{commit}" 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Base commit does not exist locally: $BaseRef"
+    }
+    $diffRange = "$BaseRef...HEAD"
+    $stagedFiles = @(git diff $diffRange --name-only --diff-filter=ACMR)
+} else {
+    $stagedFiles = @(git diff --cached --name-only --diff-filter=ACMR)
+}
 if ($LASTEXITCODE -ne 0) {
-    throw 'Unable to inspect the Git index.'
+    throw 'Unable to inspect changed files.'
 }
 
 $forbidden = $stagedFiles | Where-Object {
-    $_ -match '(^|/)(\.env|\.env\.(?!example$).+|application-(local|secret|prod)\.(yml|yaml|properties))$' -or
+    ($_ -match '(^|/)(\.env|\.env\.(?!example$).+|application-(local|secret)\.(yml|yaml|properties))$') -or
+    ($_ -match '(^|/)application-prod\.(yml|yaml|properties)$' -and $_ -ne $allowedProductionConfig) -or
     $_ -match '\.(bak|pem|key|p12|jks|keystore)$'
 }
 
@@ -18,7 +32,11 @@ if ($forbidden) {
     exit 1
 }
 
-$diff = @(git diff --cached --no-ext-diff --unified=0 -- . ':!scripts/check-sensitive.ps1')
+if ($BaseRef) {
+    $diff = @(git diff $diffRange --no-ext-diff --unified=0 -- . ':!scripts/check-sensitive.ps1')
+} else {
+    $diff = @(git diff --cached --no-ext-diff --unified=0 -- . ':!scripts/check-sensitive.ps1')
+}
 if ($LASTEXITCODE -ne 0) {
     throw 'Unable to inspect staged changes.'
 }
@@ -35,4 +53,4 @@ if ($matches) {
     exit 1
 }
 
-Write-Output 'Sensitive-file and staged-credential checks passed.'
+Write-Output 'Sensitive-file and changed-credential checks passed.'

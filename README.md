@@ -176,10 +176,11 @@ Learning and construct platforms/
 ### 1. 初始化数据库
 
 ```bash
-# 建库 + 导入全量表结构（89 张表）
+# 只创建空库；表结构由 Flyway 管理
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS light_out DEFAULT CHARSET utf8mb4;"
-mysql -u root -p light_out < "light-out/数据库light_out .sql"
 ```
+
+不要再手动导入整份建表 SQL。空数据库会在后端首次启动时由 Flyway 自动执行 `V1__baseline_schema.sql`；已有表和数据的生产库必须走[一次性基线流程](docs/DEPLOYMENT_RUNBOOK.md#4-flyway-首次接管现有数据库)。运行后端的数据库账号需要对该库具备 Flyway 迁移所需的 DDL 权限。
 
 ### 2. 启动后端（端口 8080）
 
@@ -195,17 +196,22 @@ export JWT_SECRET="$(openssl rand -base64 48)"
 
 ```bash
 # 在仓库根目录执行；-pl lp-starter -am 会连带构建其依赖模块
-mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run
+mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 也可以直接运行打包产物：
 
 ```bash
 mvn -f light-out/pom.xml -pl lp-starter -am -DskipTests package
+# 生产服务器显式使用 prod；跨域部署时改成真实前端 HTTPS 域名
+export SPRING_PROFILES_ACTIVE=prod
+export CORS_ALLOWED_ORIGINS=https://learning.example.com
 java -jar light-out/lp-starter/target/lp-starter-0.0.1-SNAPSHOT.jar
 ```
 
 启动前请先确认 MySQL / Redis 可用，并按需通过环境变量覆盖连接信息（见下一节）。
+
+生产发布、Flyway 首次接管现有数据库、备份和故障回滚请严格按照 [部署与回滚手册](docs/DEPLOYMENT_RUNBOOK.md) 操作。
 
 ### 3. 启动前端（端口 5173）
 
@@ -236,7 +242,7 @@ npm run lint      # ESLint 检查
 | MySQL | localhost:3306 / 库 `light_out` |
 | Redis | localhost:6379 |
 
-前端通过 `VITE_API_BASE_URL` 直连后端；后端 `WebConfig` 已放开全局 CORS（`allowedOriginPatterns("*")` + `allowCredentials`），因此本地跨端口调试无需额外配置代理。
+`dev` 环境默认只允许 `http://localhost:5173` 和 `http://127.0.0.1:5173` 跨域访问。生产环境默认拒绝跨域；若前后端不同源，必须通过 `CORS_ALLOWED_ORIGINS` 配置完整的前端 HTTPS 来源，多个来源用逗号分隔。
 
 ---
 
@@ -261,13 +267,15 @@ npm run lint      # ESLint 检查
 ```bash
 # Spring Boot 进程启动前设置环境变量（优先级高于 application.yaml）
 set JWT_SECRET=请替换为至少32字节的随机串
+set SPRING_PROFILES_ACTIVE=dev
+set CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 set SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/light_out?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
 set SPRING_DATASOURCE_USERNAME=your_user
 set SPRING_DATASOURCE_PASSWORD=your_password
 set SPRING_DATA_REDIS_HOST=localhost
 set SPRING_DATA_REDIS_PORT=6379
 set SPRING_DATA_REDIS_PASSWORD=your_redis_password
-mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run
+mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 ```yaml
@@ -280,8 +288,8 @@ spring:
 ```
 
 ```bash
-# 用本地 profile 启动（JWT_SECRET 仍通过环境变量提供）
-mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.profiles=local
+# dev 提供调试日志，本地 profile 只覆盖个人连接凭据
+mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.profiles=dev,local
 ```
 
 其他常用配置项（均在 `application.yaml` 中）：
@@ -297,7 +305,10 @@ mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.pr
 | `spring.data.redis` | `localhost:6379`，db 0 | |
 | `spring.data.redis.password` | `${SPRING_DATA_REDIS_PASSWORD:}` | 通过环境变量注入 |
 | `mybatis.mapper-locations` | `classpath:mapper/*.xml` | |
-| `logging.level.com.learning` | `DEBUG` | |
+| `logging.level.com.learning` | `dev=DEBUG` / `prod=INFO` | 生产环境同时关闭 MyBatis SQL 输出 |
+| `app.cors.allowed-origins` | `dev=本机 5173` / `prod=空` | 生产环境通过 `CORS_ALLOWED_ORIGINS` 显式放行来源 |
+| `spring.flyway.baseline-on-migrate` | `false` | 仅现有生产库首次接入时临时设为 `true` |
+| `management.server` | `127.0.0.1:8081` | Actuator 本机管理端口，不应代理到公网 |
 
 ---
 
@@ -305,8 +316,12 @@ mvn -f light-out/pom.xml -pl lp-starter -am spring-boot:run -Dspring-boot.run.pr
 
 ### 分支与提交
 
-- **主干开发 + 功能分支**：新功能在独立分支开发，自测通过后再合并回 `main`。
+- **主干开发 + 功能分支**：新功能在独立分支开发，通过 Pull Request 合并回受保护的 `main`，不要直接 push `main`。
+- Pull Request 必须通过 `Backend tests`、`Frontend checks`、`Sensitive information`、`Dependency review` 和 `Deployment script tests`。
+- 只有合并进入 `main` 后，CI 才会重新验证并部署到 GitHub `production` Environment；PR 工作流没有服务器凭据，也不会部署。
 - **尽量避免强制推送**（`git push -f`），保护他人已拉取的历史。
+
+GitHub 分支保护、Environment Secrets、云服务器首次初始化和失败回滚步骤见 [部署与回滚手册](docs/DEPLOYMENT_RUNBOOK.md)。
 
 ### 前端
 

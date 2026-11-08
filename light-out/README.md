@@ -77,10 +77,9 @@ lp-common → lp-auth → lp-course → lp-assessment → lp-starter
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS light_out DEFAULT CHARSET utf8mb4;"
-mysql -u root -p light_out < "数据库light_out .sql"
 ```
 
-> 脚本文件名中 `数据库light_out` 与 `.sql` 之间**有一个空格**，引用时注意加引号。
+空库由 Flyway 在后端第一次启动时执行 `lp-starter/src/main/resources/db/migration/V1__baseline_schema.sql`。不要再手动导入整份 SQL；已有生产数据的数据库必须按部署手册执行一次性基线。数据库运行账号需要具备创建、修改表和索引等迁移权限。
 
 ### 2. 启动
 
@@ -99,11 +98,11 @@ IDEA 用户可在 `Run/Debug Configurations → Environment variables` 中添加
 
 ```bash
 # 在 light-out 目录下
-./mvnw -pl lp-starter -am spring-boot:run        # macOS / Linux
-mvnw.cmd -pl lp-starter -am spring-boot:run      # Windows
+./mvnw -pl lp-starter -am spring-boot:run -Dspring-boot.run.profiles=dev        # macOS / Linux
+mvnw.cmd -pl lp-starter -am spring-boot:run -Dspring-boot.run.profiles=dev      # Windows
 
 # 或使用本机 Maven
-mvn -pl lp-starter -am spring-boot:run
+mvn -pl lp-starter -am spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
 `-pl lp-starter -am` 表示"只构建 `lp-starter` 以及它所依赖的模块"，这是开发期最快的启动方式。服务默认监听 **8080** 端口。
@@ -112,10 +111,15 @@ mvn -pl lp-starter -am spring-boot:run
 
 ```bash
 ./mvnw -pl lp-starter -am -DskipTests package
+export SPRING_PROFILES_ACTIVE=prod
+# 仅当前端与 API 不同源时设置；必须使用真实的 HTTPS 来源
+export CORS_ALLOWED_ORIGINS=https://learning.example.com
 java -jar lp-starter/target/lp-starter-0.0.1-SNAPSHOT.jar
 ```
 
 > ⚠️ 只有 `lp-starter` 保留了 `spring-boot-maven-plugin`（可执行 jar）；其它模块打包出来的是普通 jar，不能单独启动。
+
+生产发布、Flyway 基线、备份和回滚步骤见仓库根目录的 [`docs/DEPLOYMENT_RUNBOOK.md`](../docs/DEPLOYMENT_RUNBOOK.md)。
 
 ### 4. 只构建 / 只测试某个模块
 
@@ -132,7 +136,9 @@ java -jar lp-starter/target/lp-starter-0.0.1-SNAPSHOT.jar
 
 | 文件 | 作用 |
 |------|------|
-| `lp-starter/src/main/resources/application.yaml` | **唯一实际生效**的运行配置（端口、数据源、Redis、MyBatis、日志） |
+| `lp-starter/src/main/resources/application.yaml` | 环境无关的公共配置；未指定 profile 时安全地默认为 `prod` |
+| `lp-starter/src/main/resources/application-dev.yaml` | 开发配置：本机前端 CORS 白名单、SQL 输出、应用 DEBUG 日志 |
+| `lp-starter/src/main/resources/application-prod.yaml` | 生产配置：默认拒绝跨域、关闭 SQL 输出和 DEBUG 日志 |
 | `lp-common` / `lp-auth` / `lp-course` 的 `application.properties` | 仅声明各自 `spring.application.name`，位于同一 classpath 根，实际生效者取决于 jar 加载顺序 |
 | `lp-learning/src/main/resources/application.yml` | 该模块自身的配置，因模块未接入启动链路而不生效 |
 
@@ -147,7 +153,11 @@ java -jar lp-starter/target/lp-starter-0.0.1-SNAPSHOT.jar
 | `spring.datasource.url` | `jdbc:mysql://localhost:3306/light_out?...` | 含 `createDatabaseIfNotExist=true` |
 | `mybatis.mapper-locations` | `classpath:mapper/*.xml` | 只加载 `lp-course` 的 8 个 XML（`lp-auth`/`lp-assessment` 用注解） |
 | `spring.data.redis` | `localhost:6379` / db 0 | Lettuce 连接池，max-active 8 |
-| `logging.level.com.learning` | `DEBUG` | 开发期日志 |
+| `logging.level.com.learning` | `dev=DEBUG` / `prod=INFO` | 生产环境不输出 DEBUG |
+| `mybatis.configuration.log-impl` | `dev=StdOutImpl` / `prod=NoLoggingImpl` | 生产环境不输出 SQL、参数和查询结果 |
+| `app.cors.allowed-origins` | `dev=本机 5173` / `prod=空` | 使用 `CORS_ALLOWED_ORIGINS` 覆盖，禁止通配符 |
+| `spring.flyway.baseline-on-migrate` | `false` | 现有数据库首次接入时只临时开启一次 |
+| `management.server` | `127.0.0.1:8081` | Actuator 独立本机端口，生产只暴露 health/info |
 
 ### JWT 与口令策略
 
@@ -189,7 +199,7 @@ spring:
 ```
 
 ```bash
-./mvnw -pl lp-starter -am spring-boot:run -Dspring-boot.run.profiles=local
+./mvnw -pl lp-starter -am spring-boot:run -Dspring-boot.run.profiles=dev,local
 ```
 
 ### 关于 `compose.yaml`
@@ -212,17 +222,17 @@ spring:
   ```
 
 - **类型别名**：`type-aliases-package` 已被移除（`lpauth` 与 `lpcourse` 各有一个 `StudentClass` 实体，别名会冲突），所有 XML 使用全限定类名。
-- **建表脚本**：`数据库light_out .sql`（89 张表，全量）。
+- **建表迁移**：`db/migration/V1__baseline_schema.sql`（89 张表）；根目录的 `数据库light_out .sql` 仅保留为同内容的历史快照。
 - **命名**：数据库字段下划线 → 实体驼峰，依赖 `map-underscore-to-camel-case: true`。
 
 ---
 
 ## 接口约定
 
-- **统一响应**：`Result<T>`，`code == 1` 表示成功；业务失败通常仍返回 HTTP 200，由前端按 `code` 判断。
+- **统一响应**：响应体使用 `Result<T>`，`code == 1` 表示成功；失败同时使用标准 HTTP 4xx/5xx 状态码，前端从响应体 `msg` 读取提示。
 - **鉴权**：`POST /login` 返回 JWT，后续请求带 `Authorization: Bearer <token>`；`LoginInterceptor` 拦截 `/**` 并放行 `/login`；当前用户信息通过 `UserContext` 在请求内传递。
 - **角色**：`super_admin`(1) → `dept_admin`(2) → `teacher`(3) → `assistant`(4) → `student`(5)，数值越小权限越高，与前端 `src/constants/roles.ts` 一一对应。
-- **跨域**：`WebConfig` 已开启全局 CORS（`allowedOriginPatterns("*")` + `allowCredentials(true)`），因此前端本地直连 8080 无需额外代理。
+- **跨域**：只接受 `app.cors.allowed-origins` 中的精确来源；禁止 `*`。`dev` 默认允许本机 5173，`prod` 默认不允许跨域，跨域部署时通过 `CORS_ALLOWED_ORIGINS=https://真实前端域名` 配置。
 
 ---
 

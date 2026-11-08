@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import type { Result } from '../api/types';
 
-// 后端统一返回 Result<T>（code=1 成功），业务失败多数也是 HTTP 200，需要按 code 判断
+// 后端统一返回 Result<T>（code=1 成功），同时使用标准 HTTP 状态码表达失败类型
 export class ApiError extends Error {
   code: number;
 
@@ -100,14 +100,19 @@ request.interceptors.response.use(
       return Promise.reject(new ApiError('账号或密码错误', 401));
     }
 
-    // 其他接口的 401/403 → token 过期或权限不足，统一跳登录页
-    if (status === 401 || status === 403) {
+    // 401 表示认证失效，清理本地登录态并重新登录
+    if (status === 401) {
       redirectToLogin();
-      const msg =
-        status === 403
-          ? '没有权限执行此操作'
-          : '登录已过期，请重新登录';
-      return Promise.reject(new ApiError(msg, status));
+      return Promise.reject(
+        new ApiError(error.response?.data?.msg || '登录已过期，请重新登录', status),
+      );
+    }
+
+    // 403 表示已登录但权限不足，不能误清除有效登录态
+    if (status === 403) {
+      return Promise.reject(
+        new ApiError(error.response?.data?.msg || '没有权限执行此操作', status),
+      );
     }
 
     // 网络错误（无 response）

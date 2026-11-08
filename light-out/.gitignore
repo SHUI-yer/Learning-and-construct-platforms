@@ -65,6 +65,8 @@ uploads/
 **/application-prod.yml
 **/application-prod.yaml
 **/application-prod.properties
+# 启动模块的生产安全基线不含凭据，需要随代码发布；真实值仍由环境变量注入。
+!lp-starter/src/main/resources/application-prod.yaml
 **/bootstrap-local.yml
 **/bootstrap-local.yaml
 

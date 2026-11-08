@@ -5,7 +5,10 @@ import com.learning.assessment.service.QuestionBankService;
 import com.learning.assessment.vo.QuestionVO;
 import com.learning.lpcommon.result.PageResult;
 import com.learning.lpcommon.result.Result;
+import com.learning.lpcommon.validation.ValidationGroups;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,12 +19,13 @@ public class QuestionController {
     private QuestionBankService questionBankService;
 
     @PostMapping("/create")
-    public Result<QuestionVO> createQuestion(@RequestBody QuestionCreateDTO dto) {
+    public Result<QuestionVO> createQuestion(@Valid @RequestBody QuestionCreateDTO dto) {
         return Result.success(questionBankService.createQuestion(dto));
     }
 
     @PutMapping("/update")
-    public Result<QuestionVO> updateQuestion(@RequestBody QuestionCreateDTO dto) {
+    public Result<QuestionVO> updateQuestion(
+            @Validated(ValidationGroups.Update.class) @RequestBody QuestionCreateDTO dto) {
         return Result.success(questionBankService.updateQuestion(dto));
     }
 

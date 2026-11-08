@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Learning Platform database backup every day
+
+[Timer]
+OnCalendar=*-*-* 03:15:00
+Persistent=true
+RandomizedDelaySec=15m
+Unit=learning-platform-backup.service
+
+[Install]
+WantedBy=timers.target

@@ -20,4 +20,12 @@ public interface CourseAccessMapper {
     /** 是否为该课程的授课教师/助教（course_teacher 关联表） */
     @Select("SELECT COUNT(*) FROM course_teacher WHERE course_id = #{courseId} AND teacher_id = #{teacherId}")
     int countCourseTeacher(@Param("courseId") Long courseId, @Param("teacherId") Long teacherId);
+
+    /** 学生是否已加入一门已上线且未删除的课程 */
+    @Select("SELECT COUNT(*) FROM course c " +
+            "INNER JOIN course_student cs ON cs.course_id = c.course_id " +
+            "WHERE c.course_id = #{courseId} AND cs.student_id = #{studentId} " +
+            "AND c.status = 2 AND c.deleted_at IS NULL")
+    int countActiveCourseStudent(@Param("courseId") Long courseId,
+                                 @Param("studentId") Long studentId);
 }

@@ -1,5 +1,7 @@
 package com.learning.lpcommon.interceptors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.learning.lpcommon.result.Result;
 import com.learning.lpcommon.utils.JwtUtil;
 import com.learning.lpcommon.utils.UserContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,9 +23,11 @@ import java.util.Map;
 public class LoginInterceptor implements HandlerInterceptor {
 
     private final JwtUtil jwtUtil;
+    private final ObjectMapper objectMapper;
 
-    public LoginInterceptor(JwtUtil jwtUtil) {
+    public LoginInterceptor(JwtUtil jwtUtil, ObjectMapper objectMapper) {
         this.jwtUtil = jwtUtil;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -41,6 +45,12 @@ public class LoginInterceptor implements HandlerInterceptor {
             // 不返回具体原因，避免把"签名错误/过期/格式非法"暴露给调用方
             log.debug("登录校验未通过: {} {} - {}", request.getMethod(), request.getRequestURI(), e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            try {
+                objectMapper.writeValue(response.getWriter(), Result.error("未登录或登录已过期"));
+            } catch (Exception writeException) {
+                log.warn("写入未登录响应失败", writeException);
+            }
             return false;
         }
     }

@@ -25,6 +25,7 @@ import com.learning.assessment.vo.ExamStartVO;
 import com.learning.assessment.vo.ExamAnswerVO;
 import com.learning.assessment.vo.SubmissionVO;
 import com.learning.lpcommon.exception.BaseException;
+import com.learning.lpcommon.exception.ConflictException;
 import com.learning.lpcommon.exception.ForbiddenException;
 import com.learning.lpcommon.result.PageResult;
 import com.learning.lpcommon.utils.UserContext;
@@ -87,6 +88,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (task == null) {
             throw new BaseException("任务不存在");
         }
+        accessGuard.requireTaskSubmittable(task, "开始作答");
         if (!SUBMIT_TYPE_QUIZ.equals(task.getTaskType())) {
             throw new BaseException("仅测验/考试任务支持限时作答");
         }
@@ -146,6 +148,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (task == null) {
             throw new BaseException("任务不存在");
         }
+        accessGuard.requireTaskSubmittable(task, "提交答卷");
         if (!"quiz".equals(task.getTaskType())) {
             throw new BaseException("仅测验/考试任务支持在线作答");
         }
@@ -186,16 +189,17 @@ public class SubmissionServiceImpl implements SubmissionService {
             submissionMapper.insert(submission);
         } else {
             // 重交/限时收卷：覆盖旧作答与历史批阅结果，重新自动判分
+            boolean wasInProgress = STATUS_IN_PROGRESS.equals(submission.getStatus());
             submission.setStatus(STATUS_GRADED);
             submission.setScore(totalScore(answers));
             submission.setTeacherComment(null);
             submission.setIsExcellent(0);
-            if (STATUS_IN_PROGRESS.equals(submission.getStatus())) {
+            if (wasInProgress) {
                 submission.setSubmittedAt(LocalDateTime.now());
             }
             int rows = submissionMapper.update(submission);
             if (rows == 0) {
-                throw new BaseException("提交已被他人处理，请刷新后重试");
+                throw new ConflictException("提交已被他人处理，请刷新后重试");
             }
             examAnswerMapper.deleteBySubmissionId(submission.getSubmissionId());
         }
@@ -231,6 +235,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             accessGuard.requireCourseTeacher(task.getCourseId(), "查看任务提交");
             scopedStudentId = null;
         } else if (accessGuard.isStudent()) {
+            accessGuard.requireTaskReadable(task, "查看任务提交");
             scopedStudentId = accessGuard.requireUserId("查看任务提交");
         } else {
             throw new ForbiddenException("无权查看任务提交");
@@ -269,6 +274,7 @@ public class SubmissionServiceImpl implements SubmissionService {
             if (!currentUserId.equals(submission.getStudentId())) {
                 throw new ForbiddenException("无权查看他人的提交");
             }
+            accessGuard.requireTaskReadable(task, "查看提交详情");
         }
         // 参考答案与解析只对教师开放；学生仅在批阅完成后可见
         boolean includeReference = teaching || STATUS_GRADED.equals(submission.getStatus());
@@ -313,7 +319,7 @@ public class SubmissionServiceImpl implements SubmissionService {
         submission.setVersion(dto.getVersion());
         int rows = submissionMapper.update(submission);
         if (rows == 0) {
-            throw new BaseException("提交已被他人批阅，请刷新后重试");
+            throw new ConflictException("提交已被他人批阅，请刷新后重试");
         }
         upsertGrade(submission, task);
         return detail(submission.getSubmissionId());
@@ -338,17 +344,20 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (submission == null) {
             throw new BaseException("提交不存在");
         }
+        Task task = taskMapper.selectById(submission.getTaskId());
+        if (task == null) {
+            throw new BaseException("任务不存在");
+        }
+        accessGuard.requireCourseTeacher(task.getCourseId(), "设置优秀范本");
         submission.setIsExcellent(dto.getIsExcellent());
         submission.setVersion(dto.getVersion());
         int rows = submissionMapper.update(submission);
         if (rows == 0) {
-            throw new BaseException("提交已被他人处理，请刷新后重试");
+            throw new ConflictException("提交已被他人处理，请刷新后重试");
         }
-        Task task = taskMapper.selectById(submission.getTaskId());
-        accessGuard.requireCourseTeacher(task == null ? null : task.getCourseId(), "设置优秀范本");
         return SubmissionVO.fromEntity(submissionMapper.selectById(submission.getSubmissionId()),
-                task == null ? null : task.getTitle(),
-                task == null ? null : task.getMaxScore(),
+                task.getTitle(),
+                task.getMaxScore(),
                 null);
     }
 

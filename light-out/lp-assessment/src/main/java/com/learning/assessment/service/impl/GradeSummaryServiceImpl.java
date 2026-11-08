@@ -7,6 +7,7 @@ import com.learning.assessment.service.GradeSummaryService;
 import com.learning.assessment.support.AssessmentAccessGuard;
 import com.learning.assessment.vo.GradeSummaryVO;
 import com.learning.lpcommon.exception.BaseException;
+import com.learning.lpcommon.exception.ConflictException;
 import com.learning.lpcommon.result.PageResult;
 import com.learning.lpcommon.utils.UserContext;
 import jakarta.annotation.Resource;
@@ -62,7 +63,7 @@ public class GradeSummaryServiceImpl implements GradeSummaryService {
                 summary.setFinalScore(finalScore);
                 int rows = gradeSummaryMapper.update(summary);
                 if (rows == 0) {
-                    throw new BaseException("成绩汇总并发冲突，请重试");
+                    throw new ConflictException("成绩汇总并发冲突，请重试");
                 }
             }
         }
@@ -129,7 +130,7 @@ public class GradeSummaryServiceImpl implements GradeSummaryService {
             s.setConfirmedAt(now);
             int rows = gradeSummaryMapper.update(s);
             if (rows == 0) {
-                throw new BaseException("成绩确认并发冲突，请重试");
+                throw new ConflictException("成绩确认并发冲突，请重试");
             }
             prevScore = s.getFinalScore();
             prevRank = s.getRankInCourse();

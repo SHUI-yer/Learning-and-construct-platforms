@@ -84,7 +84,7 @@ export default function MainLayout() {
   const { user, isAuthenticated, initialized, logout, roleCode } = useAuth();
   const restore = useAuthStore((s) => s.restore);
   const [collapsed, setCollapsed] = useState(false);
-  const [openKeys, setOpenKeys] = useState<string[]>([]);
+  const [userOpenKeys, setUserOpenKeys] = useState<string[]>([]);
 
   // 应用启动时从 localStorage 恢复认证状态
   useEffect(() => {
@@ -93,14 +93,11 @@ export default function MainLayout() {
     }
   }, [initialized, restore]);
 
-  // 路径变化时自动展开对应父菜单
-  useEffect(() => {
-    const keys = getOpenKeys(location.pathname);
-    setOpenKeys((prev) => {
-      const merged = new Set([...prev, ...keys]);
-      return [...merged];
-    });
-  }, [location.pathname]);
+  // 当前路由对应的父菜单始终展开，同时保留用户手动展开的菜单。
+  const openKeys = useMemo(
+    () => [...new Set([...userOpenKeys, ...getOpenKeys(location.pathname)])],
+    [location.pathname, userOpenKeys],
+  );
 
   // 根据角色过滤菜单
   const menuItems = useMemo(
@@ -204,7 +201,7 @@ export default function MainLayout() {
             mode="inline"
             selectedKeys={[location.pathname]}
             openKeys={openKeys}
-            onOpenChange={setOpenKeys}
+            onOpenChange={setUserOpenKeys}
             items={menuItems}
             onClick={({ key }) => navigate(key)}
             style={{ borderRight: 0, marginTop: 8 }}

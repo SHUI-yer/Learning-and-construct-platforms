@@ -1,0 +1,26 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+# 开发环境可以输出 SQL 和应用调试日志，但跨域仍只允许显式来源。
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    com.learning: DEBUG
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,flyway
+  endpoint:
+    health:
+      show-details: always

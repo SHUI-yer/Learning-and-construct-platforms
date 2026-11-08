@@ -1,0 +1,30 @@
+[Unit]
+Description=Learning Platform Spring Boot application
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/learning-platform/current
+Environment=SPRING_PROFILES_ACTIVE=prod
+Environment=ASSESSMENT_UPLOAD_DIR=/var/lib/learning-platform/uploads/question_import
+EnvironmentFile=/home/ubuntu/.learning-platform.env
+ExecStart=/usr/bin/java -jar /opt/learning-platform/current/backend/lp-starter.jar
+Restart=on-failure
+RestartSec=5s
+TimeoutStopSec=30s
+SuccessExitStatus=143
+UMask=0027
+
+# The release itself is immutable. Runtime uploads live in StateDirectory.
+StateDirectory=learning-platform
+StateDirectoryMode=0750
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

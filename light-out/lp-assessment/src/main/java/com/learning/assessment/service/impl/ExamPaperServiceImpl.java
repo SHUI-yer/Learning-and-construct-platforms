@@ -20,6 +20,7 @@ import com.learning.assessment.vo.ExamPaperVO;
 import com.learning.assessment.vo.PaperQuestionVO;
 import com.learning.assessment.vo.TaskVO;
 import com.learning.lpcommon.exception.BaseException;
+import com.learning.lpcommon.exception.ConflictException;
 import com.learning.lpcommon.result.PageResult;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
@@ -150,7 +151,7 @@ public class ExamPaperServiceImpl implements ExamPaperService {
         paper.setVersion(dto.getVersion());
         int rows = examPaperMapper.update(paper);
         if (rows == 0) {
-            throw new BaseException("试卷已被他人修改，请刷新后重试");
+            throw new ConflictException("试卷已被他人修改，请刷新后重试");
         }
 
         if (items != null && !items.isEmpty()) {

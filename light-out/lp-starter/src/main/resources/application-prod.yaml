@@ -1,0 +1,28 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+
+# 生产环境禁止 MyBatis 输出 SQL、参数及查询结果。
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+debug: false
+logging:
+  level:
+    root: INFO
+    com.learning: INFO
+    org.mybatis: WARN
+    org.apache.ibatis: WARN
+    org.flywaydb: INFO
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+# 留空表示仅允许同源请求；跨域部署时必须填写完整的 HTTPS 前端来源，多个值用逗号分隔。
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}

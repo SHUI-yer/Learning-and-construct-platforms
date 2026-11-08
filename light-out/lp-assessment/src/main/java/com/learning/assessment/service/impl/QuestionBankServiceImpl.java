@@ -8,6 +8,7 @@ import com.learning.assessment.service.QuestionValidator;
 import com.learning.assessment.support.AssessmentAccessGuard;
 import com.learning.assessment.vo.QuestionVO;
 import com.learning.lpcommon.exception.BaseException;
+import com.learning.lpcommon.exception.ConflictException;
 import com.learning.lpcommon.result.PageResult;
 import com.learning.lpcommon.utils.UserContext;
 import jakarta.annotation.Resource;
@@ -68,7 +69,7 @@ public class QuestionBankServiceImpl implements QuestionBankService {
 
         int rows = questionBankMapper.update(q);
         if (rows == 0) {
-            throw new BaseException("题目已被他人修改，请刷新后重试");
+            throw new ConflictException("题目已被他人修改，请刷新后重试");
         }
         return QuestionVO.fromEntity(questionBankMapper.selectById(dto.getQId()));
     }

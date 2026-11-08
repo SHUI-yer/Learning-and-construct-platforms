@@ -14,6 +14,7 @@ import com.learning.assessment.service.GradeAppealService;
 import com.learning.assessment.support.AssessmentAccessGuard;
 import com.learning.assessment.vo.GradeAppealVO;
 import com.learning.lpcommon.exception.BaseException;
+import com.learning.lpcommon.exception.ConflictException;
 import com.learning.lpcommon.exception.ForbiddenException;
 import com.learning.lpcommon.result.PageResult;
 import com.learning.lpcommon.utils.UserContext;
@@ -194,7 +195,7 @@ public class GradeAppealServiceImpl implements GradeAppealService {
             grade.setWeightedScore(weighted(grade.getScore(), task.getWeight()));
             int rows = gradeMapper.update(grade);
             if (rows == 0) {
-                throw new BaseException("成绩更新冲突，请重试");
+                throw new ConflictException("成绩更新冲突，请重试");
             }
             // 联动 grade_summary：重算总分，已确认则清空确认信息与排名（需重新确认）
             refreshSummary(grade);
@@ -207,7 +208,7 @@ public class GradeAppealServiceImpl implements GradeAppealService {
         appeal.setVersion(dto.getVersion());
         int rows = gradeAppealMapper.update(appeal);
         if (rows == 0) {
-            throw new BaseException("申诉已被他人处理，请刷新后重试");
+            throw new ConflictException("申诉已被他人处理，请刷新后重试");
         }
         return buildVO(gradeAppealMapper.selectById(appeal.getAppealId()), gradeMapper.selectById(appeal.getGradeId()));
     }

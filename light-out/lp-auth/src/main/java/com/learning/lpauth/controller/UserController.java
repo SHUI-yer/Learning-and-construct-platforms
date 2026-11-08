@@ -4,6 +4,7 @@ import com.learning.lpauth.dto.ChangePasswordDTO;
 import com.learning.lpauth.dto.ResetPasswordDTO;
 import com.learning.lpauth.service.UserService;
 import com.learning.lpcommon.result.Result;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,7 +31,7 @@ public class UserController {
      * 修改自己的密码：需要提供当前密码，新密码须满足强度要求。
      */
     @PutMapping("/password")
-    public Result<Void> changePassword(@RequestBody ChangePasswordDTO dto) {
+    public Result<Void> changePassword(@Valid @RequestBody ChangePasswordDTO dto) {
         userService.changePassword(dto);
         return Result.success();
     }
@@ -40,7 +41,7 @@ public class UserController {
      * 重置后该账号所有已签发的令牌仍会在过期前有效（JWT 无状态），必要时请配合下线处理。
      */
     @PostMapping("/password/reset")
-    public Result<Void> resetPassword(@RequestBody ResetPasswordDTO dto) {
+    public Result<Void> resetPassword(@Valid @RequestBody ResetPasswordDTO dto) {
         userService.resetPassword(dto);
         return Result.success();
     }

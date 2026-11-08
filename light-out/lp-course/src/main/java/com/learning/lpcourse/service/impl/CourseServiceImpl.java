@@ -2,6 +2,7 @@ package com.learning.lpcourse.service.impl;
 
 import com.learning.lpcommon.constant.RoleConstant;
 import com.learning.lpcommon.exception.ForbiddenException;
+import com.learning.lpcommon.exception.ConflictException;
 import com.learning.lpcommon.exception.NotFoundCourseException;
 import com.learning.lpcommon.exception.NullException;
 import com.learning.lpcommon.result.Result;
@@ -9,6 +10,7 @@ import com.learning.lpcourse.dto.*;
 import com.learning.lpcourse.entity.*;
 import com.learning.lpcourse.mapper.*;
 import com.learning.lpcourse.service.CourseService;
+import com.learning.lpcourse.support.CourseAccessGuard;
 import com.learning.lpcourse.vo.CourseVO;
 import com.learning.lpcommon.result.PageResult;
 import com.learning.lpcommon.utils.UserContext;
@@ -34,6 +36,7 @@ public class CourseServiceImpl implements CourseService {
     private final StudentClassMapper studentClassMapper;
     private final ChapterMapper chapterMapper;
     private final ContentResourceMapper resourceMapper;
+    private final CourseAccessGuard accessGuard;
     /**
      * 根据课程id查询全部章节
      */
@@ -42,8 +45,11 @@ public class CourseServiceImpl implements CourseService {
     public PageResult<CourseVO> getCoursePage(Long pageNum, Long pageSize, CourseQueryDTO query) {
         pageNum = pageNum < 1 ? 1 : pageNum;
         long offset = (pageNum - 1) * pageSize;
-        List<CourseVO> records = courseMapper.selectCoursePage(offset, pageSize, query);
-        Long total = courseMapper.selectCourseCount(query);
+        String accessScope = accessGuard.currentScope();
+        Long userId = CourseAccessGuard.SCOPE_ADMIN.equals(accessScope)
+                ? null : accessGuard.requireUserId("查看课程列表");
+        List<CourseVO> records = courseMapper.selectCoursePage(offset, pageSize, query, accessScope, userId);
+        Long total = courseMapper.selectCourseCount(query, accessScope, userId);
         return PageResult.build(records, total, pageNum, pageSize);
     }
 
@@ -168,7 +174,12 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     public CourseVO getCourseInfo(Long courseId) {
-        return courseMapper.selectCourseById(courseId);
+        CourseVO course = courseMapper.selectCourseById(courseId);
+        if (course == null) {
+            throw new NotFoundCourseException("课程不存在");
+        }
+        accessGuard.requireCourseReadable(course, "查看课程详情");
+        return course;
     }
 
     @Override
@@ -212,17 +223,16 @@ public class CourseServiceImpl implements CourseService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Long copyCourse(CourseCopyDTO dto) {
-        Long operatorId = UserContext.getUserId();
-        String roleCode = UserContext.getRoleCode();
-        // 只允许任课教师 teacher
-        if (!RoleConstant.TEACHER.equals(roleCode)) {
-            throw new ForbiddenException("仅任课教师可以复制课程");
+        if (dto == null || dto.getSourceCourseId() == null) {
+            throw new NullException("源课程ID不能为空");
         }
+        Long operatorId = accessGuard.requireUserId("复制课程");
 
         CourseVO sourceCourse = courseMapper.selectSourceCourse(dto.getSourceCourseId());
         if (sourceCourse == null) {
             throw new NotFoundCourseException("源课程不存在，无法执行复制");
         }
+        accessGuard.requireCourseCopyable(sourceCourse);
 
         // dto有值用dto，null就复用源课程
         if (dto.getCourseName() == null) dto.setCourseName(sourceCourse.getCourseName());
@@ -301,7 +311,9 @@ public class CourseServiceImpl implements CourseService {
         }
         Course course = new Course();
         BeanUtils.copyProperties(dto,course);
-        courseMapper.update(course);
+        if (courseMapper.update(course) == 0) {
+            throw new ConflictException("课程已被他人修改，请刷新后重试");
+        }
         return Result.success();
     }
 }

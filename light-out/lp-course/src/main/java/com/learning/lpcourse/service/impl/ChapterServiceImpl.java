@@ -11,6 +11,7 @@ import com.learning.lpcourse.mapper.ChapterMapper;
 import com.learning.lpcourse.mapper.ContentResourceMapper;
 import com.learning.lpcourse.mapper.CourseMapper;
 import com.learning.lpcourse.service.ChapterService;
+import com.learning.lpcourse.support.CourseAccessGuard;
 import com.learning.lpcourse.vo.ChapterTreeVO;
 import com.learning.lpcommon.constant.RoleConstant;
 import com.learning.lpcommon.exception.ForbiddenException;
@@ -32,6 +33,7 @@ public class ChapterServiceImpl implements ChapterService {
     private final ChapterMapper chapterMapper;
     private final ContentResourceMapper resourceMapper;
     private final CourseMapper courseMapper;
+    private final CourseAccessGuard accessGuard;
 
     /**
      * 校验操作章节权限
@@ -118,7 +120,11 @@ public class ChapterServiceImpl implements ChapterService {
 
     @Override
     public Result<List<ChapterTreeVO>> getChapterTree(Long courseId) {
-        //查询树形不需要强权限，教师、学生、管理员都可以查看
+        CourseVO course = courseMapper.selectCourseById(courseId);
+        if (course == null) {
+            throw new NotFoundCourseException("课程不存在");
+        }
+        accessGuard.requireCourseReadable(course, "查看课程章节");
         List<Chapter> flatList = chapterMapper.selectFlatByCourseId(courseId);
         if (flatList.isEmpty()) {
             return Result.success(Collections.emptyList());

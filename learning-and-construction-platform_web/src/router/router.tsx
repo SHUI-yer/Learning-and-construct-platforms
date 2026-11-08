@@ -1,37 +1,24 @@
-import { lazy } from 'react';
 import MainLayout from '../layouts/MainLayout';
 import AuthLayout from '../layouts/AuthLayout';
-
-// 懒加载页面组件
-const Login = lazy(() => import('../pages/login'));
-const Home = lazy(() => import('../pages/Home'));
-const Profile = lazy(() => import('../pages/Profile'));
-const CourseList = lazy(() => import('../pages/course/CourseList'));
-const CourseDetail = lazy(() => import('../pages/course/CourseDetail'));
-const MyCourses = lazy(() => import('../pages/course/MyCourses'));
-
-// 考核与考试（教师端）
-const TaskList = lazy(() => import('../pages/assessment/TaskList'));
-const QuestionBank = lazy(() => import('../pages/assessment/QuestionBank'));
-const PaperManage = lazy(() => import('../pages/assessment/PaperManage'));
-const SubmissionReview = lazy(() => import('../pages/assessment/SubmissionReview'));
-const GradeManage = lazy(() => import('../pages/assessment/GradeManage'));
-const AppealReview = lazy(() => import('../pages/assessment/AppealReview'));
-
-// 考核与考试（学生端）
-const MyTaskList = lazy(() => import('../pages/myAssessment/TaskList'));
-const ExamPage = lazy(() => import('../pages/myAssessment/ExamPage'));
-const MyAppeals = lazy(() => import('../pages/myAssessment/MyAppeals'));
-const MyGrades = lazy(() => import('../pages/myAssessment/Grades'));
-
-/** 404 占位 */
-const NotFound = () => (
-  <div style={{ textAlign: 'center', paddingTop: 100 }}>
-    <h1 style={{ fontSize: 72, margin: 0, color: '#d9d9d9' }}>404</h1>
-    <p style={{ fontSize: 16, color: '#8c8c8c' }}>页面不存在或已被移除</p>
-    <a href="/" style={{ color: '#1677ff' }}>返回首页</a>
-  </div>
-);
+import {
+  AppealReview,
+  CourseDetail,
+  CourseList,
+  ExamPage,
+  GradeManage,
+  Home,
+  Login,
+  MyAppeals,
+  MyCourses,
+  MyGrades,
+  MyTaskList,
+  NotFound,
+  PaperManage,
+  Profile,
+  QuestionBank,
+  SubmissionReview,
+  TaskList,
+} from './lazyPages';
 
 const routes = [
   {

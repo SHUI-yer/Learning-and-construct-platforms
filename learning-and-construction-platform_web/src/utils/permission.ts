@@ -233,5 +233,11 @@ export function isAdmin(roleCode: RoleCode | null): boolean {
  */
 export function isTeacherOrAbove(roleCode: RoleCode | null): boolean {
   if (!roleCode) return false;
-  return [ROLES.SUPER_ADMIN, ROLES.DEPT_ADMIN, ROLES.TEACHER, ROLES.ASSISTANT].includes(roleCode as any);
+  const teachingRoles: RoleCode[] = [
+    ROLES.SUPER_ADMIN,
+    ROLES.DEPT_ADMIN,
+    ROLES.TEACHER,
+    ROLES.ASSISTANT,
+  ];
+  return teachingRoles.includes(roleCode);
 }

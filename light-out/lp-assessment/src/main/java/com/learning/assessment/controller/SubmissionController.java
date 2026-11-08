@@ -9,6 +9,7 @@ import com.learning.assessment.vo.SubmissionVO;
 import com.learning.lpcommon.result.PageResult;
 import com.learning.lpcommon.result.Result;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,7 +29,7 @@ public class SubmissionController {
     // ========== 学生作答（quiz 自动判分） ==========
 
     @PostMapping("/submit")
-    public Result<SubmissionVO> submit(@RequestBody SubmissionSubmitDTO dto) {
+    public Result<SubmissionVO> submit(@Valid @RequestBody SubmissionSubmitDTO dto) {
         SubmissionVO result = submissionService.submitQuiz(dto);
         return Result.success(result);
     }
@@ -51,7 +52,7 @@ public class SubmissionController {
     }
 
     @PostMapping("/grade")
-    public Result<SubmissionVO> grade(@RequestBody SubmissionGradeDTO dto) {
+    public Result<SubmissionVO> grade(@Valid @RequestBody SubmissionGradeDTO dto) {
         SubmissionVO result = submissionService.grade(dto);
         return Result.success(result);
     }
@@ -59,7 +60,7 @@ public class SubmissionController {
     // ========== 优秀范本 ==========
 
     @PostMapping("/excellent")
-    public Result<SubmissionVO> setExcellent(@RequestBody SubmissionExcellentDTO dto) {
+    public Result<SubmissionVO> setExcellent(@Valid @RequestBody SubmissionExcellentDTO dto) {
         SubmissionVO result = submissionService.setExcellent(dto);
         return Result.success(result);
     }

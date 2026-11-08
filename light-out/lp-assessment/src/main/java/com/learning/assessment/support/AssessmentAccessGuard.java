@@ -1,12 +1,15 @@
 package com.learning.assessment.support;
 
+import com.learning.assessment.entity.Task;
 import com.learning.assessment.mapper.CourseAccessMapper;
 import com.learning.lpcommon.constant.RoleConstant;
 import com.learning.lpcommon.exception.BaseException;
 import com.learning.lpcommon.exception.ForbiddenException;
+import com.learning.lpcommon.exception.UnauthorizedException;
 import com.learning.lpcommon.utils.UserContext;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 /**
@@ -21,6 +24,9 @@ import java.util.Set;
  */
 @Component
 public class AssessmentAccessGuard {
+
+    private static final String PUBLISH_IMMEDIATE = "immediate";
+    private static final String PUBLISH_SCHEDULED = "scheduled";
 
     /** 可以进入教师端的角色 */
     private static final Set<String> TEACHING_ROLES = Set.of(
@@ -59,7 +65,7 @@ public class AssessmentAccessGuard {
     public Long requireUserId(String action) {
         Long userId = UserContext.getUserId();
         if (userId == null) {
-            throw new ForbiddenException("未登录或登录状态无效，无法" + action);
+            throw new UnauthorizedException("未登录或登录状态无效，无法" + action);
         }
         return userId;
     }
@@ -101,5 +107,64 @@ public class AssessmentAccessGuard {
             return;
         }
         throw new ForbiddenException("无权" + action + "：您不是该课程的授课教师");
+    }
+
+    /** 要求学生已加入一门当前上线的课程。公开课程也必须先选课才能参与考核。 */
+    public void requireCourseStudent(Long courseId, String action) {
+        requireStudent(action);
+        if (courseId == null) {
+            throw new BaseException("课程ID不能为空");
+        }
+        Long userId = requireUserId(action);
+        if (courseAccessMapper.countActiveCourseStudent(courseId, userId) == 0) {
+            throw new ForbiddenException("无权" + action + "：您未加入该课程或课程未上线");
+        }
+    }
+
+    /** 读取课程考核数据：教师校验授课关系，学生校验选课关系。 */
+    public void requireCourseAssessmentAccess(Long courseId, String action) {
+        if (isTeaching()) {
+            requireCourseTeacher(courseId, action);
+            return;
+        }
+        if (isStudent()) {
+            requireCourseStudent(courseId, action);
+            return;
+        }
+        throw new ForbiddenException("无权" + action);
+    }
+
+    /** 单条任务读取权限；学生还必须等到任务实际发布。 */
+    public void requireTaskReadable(Task task, String action) {
+        if (task == null) {
+            throw new BaseException("任务不存在或已删除");
+        }
+        requireCourseAssessmentAccess(task.getCourseId(), action);
+        if (isStudent() && !isTaskPublished(task)) {
+            throw new ForbiddenException("无权" + action + "：任务尚未发布");
+        }
+    }
+
+    /** 学生开始或提交作答时，同时校验选课、发布时间与截止策略。 */
+    public void requireTaskSubmittable(Task task, String action) {
+        requireStudent(action);
+        requireTaskReadable(task, action);
+        LocalDateTime deadline = task.getDeadline();
+        boolean allowLate = Integer.valueOf(1).equals(task.getAllowLate());
+        if (deadline != null && LocalDateTime.now().isAfter(deadline) && !allowLate) {
+            throw new ForbiddenException("无权" + action + "：任务已截止且不允许迟交");
+        }
+    }
+
+    public boolean isTaskPublished(Task task) {
+        if (task == null) {
+            return false;
+        }
+        if (PUBLISH_IMMEDIATE.equals(task.getPublishType())) {
+            return true;
+        }
+        return PUBLISH_SCHEDULED.equals(task.getPublishType())
+                && task.getPublishTime() != null
+                && !task.getPublishTime().isAfter(LocalDateTime.now());
     }
 }

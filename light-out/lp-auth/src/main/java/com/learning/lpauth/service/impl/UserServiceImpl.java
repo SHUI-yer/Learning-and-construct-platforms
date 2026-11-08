@@ -21,6 +21,7 @@ import com.learning.lpcommon.exception.NotFoundUserException;
 import com.learning.lpcommon.exception.PasswordErrorException;
 import com.learning.lpcommon.exception.PasswordResetRequiredException;
 import com.learning.lpcommon.exception.UserLockedException;
+import com.learning.lpcommon.exception.UnauthorizedException;
 import com.learning.lpcommon.utils.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -75,9 +76,9 @@ public class UserServiceImpl implements UserService {
             throw new PasswordErrorException("请输入用户名和密码");
         }
         User user = userMapper.selectByUsername(loginDTO.getUsername().trim());
-        // 账号不存在
+        // 登录失败统一文案，避免通过响应枚举有效账号。
         if (user == null) {
-            throw new NotFoundUserException("账号不存在");
+            throw new PasswordErrorException("用户名或密码错误");
         }
         // 密码校验（含存量哈希迁移）
         verifyPassword(user, loginDTO.getPassword());
@@ -106,7 +107,7 @@ public class UserServiceImpl implements UserService {
     public void changePassword(ChangePasswordDTO dto) {
         Long userId = UserContext.getUserId();
         if (userId == null) {
-            throw new ForbiddenException("未登录或登录状态无效，无法修改密码");
+            throw new UnauthorizedException("未登录或登录状态无效，无法修改密码");
         }
         if (dto == null) {
             throw new BaseException("参数不能为空");

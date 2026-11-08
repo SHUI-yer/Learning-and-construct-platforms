@@ -7,6 +7,7 @@ import com.learning.assessment.vo.GradeAppealVO;
 import com.learning.lpcommon.result.PageResult;
 import com.learning.lpcommon.result.Result;
 import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,7 +20,7 @@ public class GradeAppealController {
     // ========== 学生申诉 ==========
 
     @PostMapping("/create")
-    public Result<GradeAppealVO> create(@RequestBody GradeAppealCreateDTO dto) {
+    public Result<GradeAppealVO> create(@Valid @RequestBody GradeAppealCreateDTO dto) {
         return Result.success(gradeAppealService.createAppeal(dto));
     }
 
@@ -51,7 +52,7 @@ public class GradeAppealController {
     }
 
     @PostMapping("/review")
-    public Result<GradeAppealVO> review(@RequestBody GradeAppealReviewDTO dto) {
+    public Result<GradeAppealVO> review(@Valid @RequestBody GradeAppealReviewDTO dto) {
         return Result.success(gradeAppealService.review(dto));
     }
 }
